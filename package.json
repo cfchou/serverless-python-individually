@@ -1,0 +1,38 @@
+{
+  "name": "serverless-python-made-great-again",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=4.0"
+  },
+  "description": "Serverless Python Packaging Plugin",
+  "author": "Chifeng Chou",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cfchou/serverless-python-made-great-again"
+  },
+  "keywords": [
+    "serverless",
+    "serverless framework plugin",
+    "serverless applications",
+    "serverless plugins",
+    "aws lambda",
+    "amazon",
+    "amazon web services",
+    "serverless.com"
+  ],
+  "files": [
+    "index.js",
+    "package.json",
+    "README.md"
+  ],
+  "main": "index.js",
+  "bin": {},
+  "scripts": {},
+  "devDependencies": {},
+  "dependencies": {
+    "bluebird": "^3.0.6",
+    "fs-extra": "^0.26.7",
+    "lodash": "^4.13.1"
+  }
+}
