@@ -28,11 +28,11 @@ class PythonMadeGreatAgain {
   beforePackaging() {
     let that = this;
     this.cli.log('beforePackaging...');
-    let promises = _.mapValues(this.serverless.service.functions, function (value, key) {
+    let promises = _.mapValues(this.serverless.service.functions, (value, key) => {
       //return BbPromise.bind(that).then(_.partial(that.log, value, key));
       return that.dummy(value, key);
     });
-    return BbPromise.props(promises).then(function () {
+    return BbPromise.props(promises).then(() => {
       let vs = _.values(promises);
       for (let v of vs) {
         that.cli.log('promise done...' + v.value().toString());
@@ -96,7 +96,7 @@ class PythonMadeGreatAgain {
     const wrapper = this.wrapName + '.handler';
     // validation
     //const targetKeys = _.keys(greatAgain).filter(_.bind(this.validateWrap, this));
-    const targetKeys = _.keys(greatAgain).filter(function (targetKey) {
+    const targetKeys = _.keys(greatAgain).filter((targetKey) => {
       if (!_.startsWith(targetKey, prefix) || targetKey.length <= prefixLen) {
         return false;
       }
@@ -106,7 +106,7 @@ class PythonMadeGreatAgain {
     });
 
     // selection
-    return _.map(targetKeys, function (targetKey) {
+    return _.map(targetKeys, (targetKey) => {
       const target = targetKey.substring(prefixLen);
       return {
         'name': target,
@@ -131,12 +131,36 @@ class PythonMadeGreatAgain {
   install(packagePath, requirements) {
     const that = this;
     return Fse.ensureDirAsync(packagePath)
-      .then(Fse.existsAsync(requirements))
-      .then(function (exists) {
-        that.cli.log(requirements + ' exists? ' + exists)
+      .then(() => {
+          return Fse.accessAsync(requirements, Fse.constants.R_OK);
+      })
+      .then(() => {
+        that.cli.log(requirements + ' exists');
+        // if seeing DistutilsOptionError, try http://stackoverflow.com/questions/24257803/distutilsoptionerror-must-supply-either-home-or-prefix-exec-prefix-not-both
+        let pid = ChildProcess.spawnSync('pip', ['install', '-U', '-r',
+          requirements, '-t', packagePath]);
+        return BbPromise.resolve();
+      }, () => {
+        return BbPromise.resolve();
       });
-    //ChildProcess.spawnSync('python')
   }
+
+  wrap(dir, filename, packagePath, realHandler) {
+    const content = `
+# vim:fileencoding=utf-8
+# ${filename}
+# This file is generated on the fly by serverless-python-made-great-again plugin.
+import sys
+sys.path.append('${packagePath}')
+import ${realHandler} as real_handler
+
+def handler(event, context):
+  return real_handler(event, context)
+ 
+`
+    return Fse.outputFileAsync(Path.join(dir, filename), content);
+  }
+
 
   notWork(e) {
     if (e instanceof IgnorableError) {
@@ -159,23 +183,6 @@ class PythonMadeGreatAgain {
   afterPackagingOne() {
     this.serverless.cli.log('afterPackagingOne...');
   };
-
-  wrap(dir, filename, packagePath, realHandler) {
-    const content = `
-# vim:fileencoding=utf-8
-# ${filename}
-# This file is generated on the fly by serverless-python-made-great-again plugin.
-import sys
-sys.path.append('${packagePath}')
-import ${realHandler} as real_handler
-
-def handler(event, context):
-  return real_handler(event, context)
- 
-`
-    return Fse.outputFileAsync(Path.join(dir, filename), content);
-  }
-
 
   cleanupArtifact() {
     if (this.serverless.config.servicePath) {
