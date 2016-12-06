@@ -24,33 +24,12 @@ IgnorableError.prototype.constructor = IgnorableError;
 
 class PythonMadeGreatAgain {
 
-
-  beforePackaging() {
-    let that = this;
-    this.log('beforePackaging...');
-    let promises = _.mapValues(this.serverless.service.functions, (value, key) => {
-      return that.dummy(value, key);
-    });
-    return BbPromise.props(promises).then(() => {
-      let vs = _.values(promises);
-      for (let v of vs) {
-        that.log('promise done...' + v.value().toString());
-      }
-      that.log('done...');
-    });
-  };
-
-  dummy(value, key) {
-      this.log('...' + key + ':' + value.toString());
-      return BbPromise.resolve(key);
-  };
-
   overwriteDefault() {
     const custom = this.serverless.service.custom;
     if (!_.has(custom, 'greatAgain')) {
       //throw new this.serverless.classes.Error(
       throw new IgnorableError(
-        'Want to be great again you got to do something. Please set up custom.greatAgain.');
+        'Want to be great again you got to set up custom.greatAgain.');
     }
     const greatAgain = custom.greatAgain;
     if (_.has(greatAgain, 'wrapName') && greatAgain.wrapName) {
@@ -74,6 +53,7 @@ class PythonMadeGreatAgain {
     const targetObj = this.options.functionObj;
     const targetKey = this.wrapName + ':' + target;
     const wrapper = this.wrapName + '.handler';
+    this.xxx = true;
 
     if (_.has(greatAgain, targetKey) &&
       _.endsWith(targetObj.handler, wrapper)) {
@@ -84,7 +64,7 @@ class PythonMadeGreatAgain {
       }
     }
     throw new IgnorableError(
-      'Want to be great again you got to do something. Please set up custom.greatAgain.');
+      'Want to be great again you got to set up custom.greatAgain.');
   }
 
   selectAll() {
@@ -94,7 +74,6 @@ class PythonMadeGreatAgain {
     const prefixLen = (this.wrapName + ':').length;
     const wrapper = this.wrapName + '.handler';
     // validation
-    //const targetKeys = _.keys(greatAgain).filter(_.bind(this.validateWrap, this));
     const targetKeys = _.keys(greatAgain).filter((targetKey) => {
       if (!_.startsWith(targetKey, prefix) || targetKey.length <= prefixLen) {
         return false;
@@ -121,9 +100,13 @@ class PythonMadeGreatAgain {
       target.function.handler.length - wrapper.length);
     const packagePath = Path.join(handlerDir, this.libSubDir);
     const requirements = Path.join(handlerDir, 'requirements.txt');
+
     let promise = this.wrap(handlerDir, this.wrapName + '.py', packagePath,
-      target.realHandler);
-    promise.then(_.partial(_.bind(this.install, this), packagePath, requirements));
+      target.realHandler)
+    promise = promise.then(_.partial(_.bind(this.install, this), packagePath,
+      requirements));
+
+    this.works.push(promise);
     return promise;
   };
 
@@ -135,9 +118,9 @@ class PythonMadeGreatAgain {
       })
       .then(() => {
         that.log(requirements + ' exists');
-        // if seeing DistutilsOptionError, try http://stackoverflow.com/questions/24257803/distutilsoptionerror-must-supply-either-home-or-prefix-exec-prefix-not-both
-        let ret = ChildProcess.spawnSync('pip', ['install', '-U', '-r',
-          requirements, '-t', packagePath]);
+        const ret = ChildProcess.spawnSync('python', [
+          Path.resolve(__dirname, 'requirements.py'),
+          requirements, packagePath]);
         that.log(ret.stderr.toString());
         that.log(ret.stdout.toString());
         return BbPromise.resolve();
@@ -152,7 +135,7 @@ class PythonMadeGreatAgain {
 # ${filename}
 # This file is generated on the fly by serverless-python-made-great-again plugin.
 import sys
-sys.path.append('${packagePath}')
+sys.path.insert(0, '${packagePath}')
 import ${realHandler} as real_handler
 
 def handler(event, context):
@@ -163,10 +146,11 @@ def handler(event, context):
   };
 
 
-  notWork(e) {
+  ignoreIgnorableError(e) {
     if (e instanceof IgnorableError) {
       // log then swallow
       this.log(e.stack);
+      // NOTE: following functions in the promise chain will be executed.
       return BbPromise.resolve();
     } else {
       //throw new this.serverless.classes.Error(e.message);
@@ -174,37 +158,38 @@ def handler(event, context):
     }
   };
 
-  afterPackaging() {
-    this.serverless.cli.log('afterPackaging...');
+  clean() {
+    this.log('cleaning...')
+    BbPromise.resolve(this.works).then(() => {
+    })
   };
 
-  afterPackagingOne() {
-    this.serverless.cli.log('afterPackagingOne...');
-  };
 
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
-    //this.cli = serverless.cli
     this.log = (msg) => { serverless.cli.log('[GreatAgain] ' + msg); };
+    // array of promises
+    this.works = [];
     this.hooks = {
       'before:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
         .then(this.overwriteDefault)
         .then(this.selectAll)
         .map(this.work)
-        .then(BbPromise.resolve, this.notWork),
+        .then(BbPromise.resolve, this.ignoreIgnorableError),
 
 
       'after:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
-        .then(this.afterPackaging),
+        .then(this.clean),
 
       'before:deploy:function:packageFunction': () => BbPromise.bind(this)
         .then(this.overwriteDefault)
         .then(this.selectOne)
-        .then(this.work, this.notWork),
+        .then(this.work)
+        .then(BbPromise.resolve, this.ignoreIgnorableError),
 
       'after:deploy:function:packageFunction': () => BbPromise.bind(this)
-        .then(this.afterPackagingOne),
+        .then(this.clean),
     };
     // overwritten by custom.greatAgain.wrapName
     this.wrapName = 'wrap';
@@ -212,6 +197,7 @@ def handler(event, context):
     this.libSubDir = 'lib';
     // overwritten by custom.greatAgain.cleanup
     this.cleanup = true;
+
   };
 }
 

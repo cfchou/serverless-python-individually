@@ -14,6 +14,10 @@ import shutil
 import subprocess
 import sys
 
+
+sys_stdout = sys.stdout.buffer if hasattr(sys.stdout, 'buffer') else sys.stdout
+sys_stderr = sys.stderr.buffer if hasattr(sys.stderr, 'buffer') else sys.stderr
+
 try:
     import virtualenv
 except ImportError:
@@ -47,11 +51,13 @@ if os.path.exists(TMP_DIR):
     shutil.rmtree(TMP_DIR)
 
 original = sys.argv
-sys.argv = ['', VENV_DIR, '--quiet']
+sys.argv = ['', VENV_DIR]
 try:
+    sys_stdout.write(b'creating virtualenv {}\n'.format(VENV_DIR))
     virtualenv.main()
 finally:
     sys.argv = original
+
 
 if platform.system() == 'Windows':
     pip_exe = os.path.join(VENV_DIR, 'Scripts', 'pip.exe')
@@ -66,8 +72,11 @@ if not os.path.isfile(pip_exe):
 
 for req_file in REQ_FILES:
     p = subprocess.Popen([pip_exe, 'install', '-r', req_file],
-                         stdout=subprocess.PIPE)
-    p.communicate()
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    sys_stderr.write(err)
+    sys_stdout.write(out)
+
     if p.returncode != 0:
         sys.exit("Failed to install requirements from: {}".format(
             req_file))
@@ -78,6 +87,7 @@ if not os.path.isdir(deps_dir):
 blacklist = ['pip', 'pip-*', 'wheel', 'wheel-*', 'setuptools', 'setuptools-*',
              'easy_install.*']
 
+sys_stdout.write(b'copy dependencies to temporary {}\n'.format(TMP_DIR))
 shutil.copytree(deps_dir, TMP_DIR, symlinks=False,
                 ignore=shutil.ignore_patterns(*blacklist))
 for f in os.listdir(TMP_DIR):
@@ -87,5 +97,9 @@ for f in os.listdir(TMP_DIR):
     elif os.path.exists(target):
         os.remove(target)
     shutil.move(os.path.join(TMP_DIR, f), TARGET_DIR)
+    sys_stdout.write(b'{} created\n'.format(target))
+
+sys_stdout.write(b'removing virtualenv {}\n'.format(VENV_DIR))
 shutil.rmtree(VENV_DIR)
+sys_stdout.write(b'removing temporary {}\n'.format(TMP_DIR))
 shutil.rmtree(TMP_DIR)
