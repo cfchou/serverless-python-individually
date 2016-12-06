@@ -27,22 +27,21 @@ class PythonMadeGreatAgain {
 
   beforePackaging() {
     let that = this;
-    this.cli.log('beforePackaging...');
+    this.log('beforePackaging...');
     let promises = _.mapValues(this.serverless.service.functions, (value, key) => {
-      //return BbPromise.bind(that).then(_.partial(that.log, value, key));
       return that.dummy(value, key);
     });
     return BbPromise.props(promises).then(() => {
       let vs = _.values(promises);
       for (let v of vs) {
-        that.cli.log('promise done...' + v.value().toString());
+        that.log('promise done...' + v.value().toString());
       }
-      that.cli.log('done...');
+      that.log('done...');
     });
   };
 
   dummy(value, key) {
-      this.cli.log('...' + key + ':' + value.toString());
+      this.log('...' + key + ':' + value.toString());
       return BbPromise.resolve(key);
   };
 
@@ -57,15 +56,15 @@ class PythonMadeGreatAgain {
     if (_.has(greatAgain, 'wrapName') && greatAgain.wrapName) {
       this.wrapName = greatAgain.wrapName;
     }
-    this.cli.log('wrapName: ' + this.wrapName);
+    this.log('wrapName: ' + this.wrapName);
     if (_.has(greatAgain, 'libSubDir') && greatAgain.libSubDir) {
       this.libSubDir = greatAgain.libSubDir;
     }
-    this.cli.log('libSubDir: ' + this.libSubDir);
+    this.log('libSubDir: ' + this.libSubDir);
     if (_.has(greatAgain, 'cleanup')) {
       this.cleanup = greatAgain.cleanup;
     }
-    this.cli.log('cleanup: ' + this.cleanup);
+    this.log('cleanup: ' + this.cleanup);
   };
 
   selectOne() {
@@ -119,14 +118,14 @@ class PythonMadeGreatAgain {
   work(target) {
     const wrapper = this.wrapName + '.handler';
     const handlerDir = target.function.handler.substring(0,
-      target.function.handler.length - wrapper.length)
+      target.function.handler.length - wrapper.length);
     const packagePath = Path.join(handlerDir, this.libSubDir);
     const requirements = Path.join(handlerDir, 'requirements.txt');
     let promise = this.wrap(handlerDir, this.wrapName + '.py', packagePath,
       target.realHandler);
     promise.then(_.partial(_.bind(this.install, this), packagePath, requirements));
     return promise;
-  }
+  };
 
   install(packagePath, requirements) {
     const that = this;
@@ -135,15 +134,17 @@ class PythonMadeGreatAgain {
           return Fse.accessAsync(requirements, Fse.constants.R_OK);
       })
       .then(() => {
-        that.cli.log(requirements + ' exists');
+        that.log(requirements + ' exists');
         // if seeing DistutilsOptionError, try http://stackoverflow.com/questions/24257803/distutilsoptionerror-must-supply-either-home-or-prefix-exec-prefix-not-both
-        let pid = ChildProcess.spawnSync('pip', ['install', '-U', '-r',
+        let ret = ChildProcess.spawnSync('pip', ['install', '-U', '-r',
           requirements, '-t', packagePath]);
+        that.log(ret.stderr.toString());
+        that.log(ret.stdout.toString());
         return BbPromise.resolve();
       }, () => {
         return BbPromise.resolve();
       });
-  }
+  };
 
   wrap(dir, filename, packagePath, realHandler) {
     const content = `
@@ -157,23 +158,20 @@ import ${realHandler} as real_handler
 def handler(event, context):
   return real_handler(event, context)
  
-`
+`;
     return Fse.outputFileAsync(Path.join(dir, filename), content);
-  }
+  };
 
 
   notWork(e) {
     if (e instanceof IgnorableError) {
       // log then swallow
-      this.cli.log('Error in serverless-python-made-great-again: ' + e.stack)
+      this.log(e.stack);
       return BbPromise.resolve();
     } else {
       //throw new this.serverless.classes.Error(e.message);
       throw e;
     }
-  }
-  beforePackagingOne() {
-    this.serverless.cli.log('beforePackagingOne...');
   };
 
   afterPackaging() {
@@ -184,21 +182,11 @@ def handler(event, context):
     this.serverless.cli.log('afterPackagingOne...');
   };
 
-  cleanupArtifact() {
-    if (this.serverless.config.servicePath) {
-      const serverlessTmpDirPath = Path.join(this.serverless.config.servicePath, '.serverless_bk');
-
-
-      if (this.serverless.utils.dirExistsSync(serverlessTmpDirPath)) {
-        Fse.removeSync(serverlessTmpDirPath);
-      }
-    }
-  };
-
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
-    this.cli = serverless.cli
+    //this.cli = serverless.cli
+    this.log = (msg) => { serverless.cli.log('[GreatAgain] ' + msg); };
     this.hooks = {
       'before:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
         .then(this.overwriteDefault)
