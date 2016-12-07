@@ -101,6 +101,7 @@ class PythonMadeGreatAgain {
    * @returns {Promise.<undefined>}
    */
   work(target) {
+    this.log('Installing packages for ' + target.name);
     const wrapper = this.wrapName + '.handler';
     const wrapperPy = this.wrapName + '.py';
     const wrapperDir = target.function.handler.substring(0,
@@ -148,19 +149,25 @@ class PythonMadeGreatAgain {
   }
 
   wrap(dir, filename, packagePath, realHandler) {
+    // realHandler: hello/hello.handler
+    // handler: hello.handler
+    const handler = realHandler.substring(realHandler.lastIndexOf(Path.sep) + 1);
+    const identifiers = handler.split('.');
     const content = `
 # vim:fileencoding=utf-8
 # ${filename}
 # This file is generated on the fly by serverless-python-made-great-again plugin.
 import sys
 sys.path.insert(0, '${packagePath}')
-import ${realHandler} as real_handler
+from ${identifiers[0]} import ${identifiers[1]} as real_handler
 
 def handler(event, context):
   return real_handler(event, context)
  
 `;
-    return Fse.outputFileAsync(Path.join(dir, filename), content);
+    const wrapperPath = Path.join(dir, filename);
+    this.log('Creating ' + wrapperPath);
+    return Fse.outputFileAsync(wrapperPath, content);
   };
 
   install(packagePath, requirements) {
@@ -199,13 +206,14 @@ def handler(event, context):
   };
 
   clean(target) {
-    this.log('cleaning...')
+    this.log('Cleaning packages for ' + target.name);
     const wrapper = this.wrapName + '.handler';
     const wrapperPy = this.wrapName + '.py';
     const wrapperDir = target.function.handler.substring(0,
       target.function.handler.length - wrapper.length);
     const packagePath = Path.join(wrapperDir, this.libSubDir);
-    return BbPromise.settle([this.remove(wrapperPy), this.remove(packagePath)])
+    const wrapperPath = Path.join(wrapperDir, wrapperPy);
+    return BbPromise.settle([this.remove(wrapperPath), this.remove(packagePath)])
   };
 
 
