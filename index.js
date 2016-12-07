@@ -135,6 +135,18 @@ class PythonMadeGreatAgain {
       });
   }
 
+  remove(dir) {
+    return Fse.removeAsync(dir)
+      .then(BbPromise.resolve,
+        (err) => {
+          if (process.env.SLS_DEBUG) {
+            this.log(err.stack);
+          }
+          return BbPromise.reject(new IgnorableError(
+            'Can\'t remove ' + dir));
+        });
+  }
+
   wrap(dir, filename, packagePath, realHandler) {
     const content = `
 # vim:fileencoding=utf-8
@@ -186,8 +198,14 @@ def handler(event, context):
     }
   };
 
-  clean() {
+  clean(target) {
     this.log('cleaning...')
+    const wrapper = this.wrapName + '.handler';
+    const wrapperPy = this.wrapName + '.py';
+    const wrapperDir = target.function.handler.substring(0,
+      target.function.handler.length - wrapper.length);
+    const packagePath = Path.join(wrapperDir, this.libSubDir);
+    return BbPromise.settle([this.remove(wrapperPy), this.remove(packagePath)])
   };
 
 
@@ -210,6 +228,7 @@ def handler(event, context):
       'after:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
         .then(_.bind(() => {
           if (!this.cleanup) {
+            // fall through until catch
             return BbPromise.reject(new IgnorableError('Cleanup is disabled'))
           }
           return BbPromise.resolve();
@@ -227,7 +246,7 @@ def handler(event, context):
         .then(_.bind(() => {
           if (!this.cleanup) {
             // fall through until catch
-            throw new IgnorableError('Cleanup is disabled');
+            return BbPromise.reject(new IgnorableError('Cleanup is disabled'))
           }
           return BbPromise.resolve();
         }, this))
