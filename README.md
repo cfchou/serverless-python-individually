@@ -51,7 +51,7 @@ functions:
           - hello/**
 
   world:
-    handler: world/wrap.world
+    handler: world/wrap.handler
     package:
       include:
           - world/**
@@ -105,7 +105,7 @@ whole .serverless directory will be deleted by the framework so you can't examin
 
 # Credit
 This plugin is heavily influenced by [serverless-wsgi](https://github.com/logandk/serverless-wsgi) from [@logandk](https://github.com/logandk).
-In fact, the [requirement installer](https://github.com/logandk/serverless-wsgi/blob/master/requirements.py) is directly borrowed from his repo.
+In fact, the [requirement installer](https://github.com/cfchou/serverless-python-individually/blob/master/requirements.py) is directly borrowed from his repo.
 If your lambda is a wsgi app, then must check out his work.
 
 
