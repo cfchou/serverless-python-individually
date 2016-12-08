@@ -89,6 +89,9 @@ hello/lib/...
 ```
 
 
+# Credit
+This plugin heavily influenced by @logandk [serverless-wsgi](https://github.com/logandk/serverless-wsgi).
+In fact, the [python requirement installer](https://github.com/logandk/serverless-wsgi/blob/master/requirements.py) is directly taken from his repo.
 
 
 
