@@ -116,10 +116,7 @@ custom:
     wrap:hello: hello/handler.hello
     wrap:world: world/handler.world
     wrap:bye: handler.bye
-  scriptHooks:
-    after:deploy:function:packageFunction: rm -rf tmp/serverless; cp -Rp .serverless tmp/serverless
 
 plugins:
   - serverless-python-individually
-  #- serverless-scriptable-plugin
 
