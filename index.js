@@ -109,7 +109,7 @@ class PythonMadeGreatAgain {
     const packagePath = Path.join(wrapperDir, this.libSubDir);
     const requirements = Path.join(wrapperDir, 'requirements.txt');
 
-    return this.wrap(wrapperDir, wrapperPy, packagePath, target.realHandler)
+    return this.wrap(wrapperDir, wrapperPy, this.libSubDir, target.realHandler)
       .then(_.partial(_.bind(this.fileAccessable, this), requirements))
       //.then(_.partial(Fse.ensureDirAsync, packagePath))
       .then(() => { return Fse.ensureDirAsync(packagePath)})
@@ -148,7 +148,7 @@ class PythonMadeGreatAgain {
         });
   }
 
-  wrap(dir, filename, packagePath, realHandler) {
+  wrap(dir, filename, libDir, realHandler) {
     // realHandler: hello/hello.handler
     // handler: hello.handler
     const handler = realHandler.substring(realHandler.lastIndexOf(Path.sep) + 1);
@@ -157,8 +157,12 @@ class PythonMadeGreatAgain {
 # vim:fileencoding=utf-8
 # ${filename}
 # This file is generated on the fly by serverless-python-made-great-again plugin.
+import os
 import sys
-sys.path.insert(0, '${packagePath}')
+
+root = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+sys.path[0:0] = [root, os.path.join(root, \"${libDir}\")]
+
 from ${identifiers[0]} import ${identifiers[1]} as real_handler
 
 def handler(event, context):
@@ -213,6 +217,7 @@ def handler(event, context):
       target.function.handler.length - wrapper.length);
     const packagePath = Path.join(wrapperDir, this.libSubDir);
     const wrapperPath = Path.join(wrapperDir, wrapperPy);
+    this.log('Deleting ' + wrapperPath + ', ' + packagePath);
     return BbPromise.settle([this.remove(wrapperPath), this.remove(packagePath)])
   };
 
