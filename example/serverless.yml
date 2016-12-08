@@ -61,7 +61,7 @@ functions:
   hello:
     # Specify the wrapping handler in the format:
     # ${function_dir}/wrap.handler
-    # The real handler is set in custom.greatAgain.wrap:${function}.
+    # The real handler is set in custom.pyIndividually.wrap:${function}.
     handler: hello/wrap.handler
 
 
@@ -99,7 +99,7 @@ functions:
 #       Description: "Description for the output"
 #       Value: "Some output value"
 custom:
-  greatAgain:
+  pyIndividually:
     # define your ${wrapName}.py to avoid conflicting with the real handler
     # The default is 'wrap'
     wrapName: wrap
@@ -120,6 +120,6 @@ custom:
     after:deploy:function:packageFunction: rm -rf tmp/serverless; cp -Rp .serverless tmp/serverless
 
 plugins:
-  - serverless-python-made-great-again
+  - serverless-python-individually
   #- serverless-scriptable-plugin
 

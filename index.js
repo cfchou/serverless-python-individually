@@ -23,58 +23,58 @@ IgnorableError.prototype = Object.create(Error.prototype);
 IgnorableError.prototype.constructor = IgnorableError;
 
 
-class PythonMadeGreatAgain {
+class PythonIndividually {
 
   overwriteDefault() {
     const custom = this.serverless.service.custom;
-    if (!_.has(custom, 'greatAgain')) {
+    if (!_.has(custom, 'pyIndividually')) {
       //throw new this.serverless.classes.Error(
       return BbPromise.reject(new IgnorableError(
-        'Want to be great again you got to set up custom.greatAgain.'));
+        'no custom.pyIndividually found.'));
     }
-    const greatAgain = custom.greatAgain;
-    if (_.has(greatAgain, 'wrapName') && greatAgain.wrapName) {
-      this.wrapName = greatAgain.wrapName;
+    const pyIndividually = custom.pyIndividually;
+    if (_.has(pyIndividually, 'wrapName') && pyIndividually.wrapName) {
+      this.wrapName = pyIndividually.wrapName;
     }
     this.log('wrapName: ' + this.wrapName);
-    if (_.has(greatAgain, 'libSubDir') && greatAgain.libSubDir) {
-      this.libSubDir = greatAgain.libSubDir;
+    if (_.has(pyIndividually, 'libSubDir') && pyIndividually.libSubDir) {
+      this.libSubDir = pyIndividually.libSubDir;
     }
     this.log('libSubDir: ' + this.libSubDir);
-    if (_.has(greatAgain, 'cleanup')) {
-      this.cleanup = greatAgain.cleanup;
+    if (_.has(pyIndividually, 'cleanup')) {
+      this.cleanup = pyIndividually.cleanup;
     }
     this.log('cleanup: ' + this.cleanup);
     return BbPromise.resolve();
   };
 
   selectOne() {
-    const greatAgain = this.serverless.service.custom.greatAgain;
+    const pyIndividually = this.serverless.service.custom.pyIndividually;
     const target = this.options.function;
     const targetObj = this.options.functionObj;
     const targetKey = this.wrapName + ':' + target;
     const wrapper = this.wrapName + '.handler';
 
-    if (_.has(greatAgain, targetKey) &&
+    if (_.has(pyIndividually, targetKey) &&
       _.endsWith(targetObj.handler, wrapper)) {
       return BbPromise.resolve({
         'name': target,
         'function': targetObj,
-        'realHandler': greatAgain[targetKey]
+        'realHandler': pyIndividually[targetKey]
       })
     }
     return BbPromise.reject(new IgnorableError(
-      'Want to be great again you got to set up custom.greatAgain.'));
+      'custom.pyIndividually is not set up properly'));
   }
 
   selectAll() {
     const functions = this.serverless.service.functions;
-    const greatAgain = this.serverless.service.custom.greatAgain;
+    const pyIndividually = this.serverless.service.custom.pyIndividually;
     const prefix = this.wrapName + ':';
     const prefixLen = (this.wrapName + ':').length;
     const wrapper = this.wrapName + '.handler';
     // validation
-    const targetKeys = _.keys(greatAgain).filter((targetKey) => {
+    const targetKeys = _.keys(pyIndividually).filter((targetKey) => {
       if (!_.startsWith(targetKey, prefix) || targetKey.length <= prefixLen) {
         return false;
       }
@@ -89,7 +89,7 @@ class PythonMadeGreatAgain {
       return BbPromise.resolve({
         'name': target,
         'function': functions[target],
-        'realHandler': greatAgain[targetKey]
+        'realHandler': pyIndividually[targetKey]
       })
     });
   }
@@ -151,12 +151,13 @@ class PythonMadeGreatAgain {
   wrap(dir, filename, libDir, realHandler) {
     // realHandler: hello/hello.handler
     // handler: hello.handler
+    // identifiers: ['hello', 'handler']
     const handler = realHandler.substring(realHandler.lastIndexOf(Path.sep) + 1);
     const identifiers = handler.split('.');
     const content = `
 # vim:fileencoding=utf-8
 # ${filename}
-# This file is generated on the fly by serverless-python-made-great-again plugin.
+# This file is generated on the fly by serverless-python-individually plugin.
 import os
 import sys
 
@@ -225,18 +226,19 @@ def handler(event, context):
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
-    this.log = (msg) => { serverless.cli.log('[GreatAgain] ' + msg); };
-    // overwritten by custom.greatAgain.wrapName
+    this.log = (msg) => { serverless.cli.log('[pyIndividually] ' + msg); };
+    // overwritten by custom.pyIndividually.wrapName
     this.wrapName = 'wrap';
-    // overwritten by custom.greatAgain.libSubDir
+    // overwritten by custom.pyIndividually.libSubDir
     this.libSubDir = 'lib';
-    // overwritten by custom.greatAgain.cleanup
+    // overwritten by custom.pyIndividually.cleanup
     this.cleanup = true;
     this.hooks = {
       'before:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
         .then(this.overwriteDefault)
         .then(this.selectAll)
-        .map(this.work),
+        .map(this.work)
+        .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined)),
 
       'after:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
         .then(_.bind(() => {
@@ -253,7 +255,8 @@ def handler(event, context):
       'before:deploy:function:packageFunction': () => BbPromise.bind(this)
         .then(this.overwriteDefault)
         .then(this.selectOne)
-        .then(this.work),
+        .then(this.work)
+        .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined)),
 
       'after:deploy:function:packageFunction': () => BbPromise.bind(this)
         .then(_.bind(() => {
@@ -269,4 +272,4 @@ def handler(event, context):
   };
 }
 
-module.exports = PythonMadeGreatAgain;
+module.exports = PythonIndividually;
