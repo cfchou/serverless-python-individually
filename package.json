@@ -1,5 +1,5 @@
 {
-  "name": "serverless-python-made-great-again",
+  "name": "serverless-python-individually",
   "version": "0.0.1",
   "engines": {
     "node": ">=4.0"
@@ -9,7 +9,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cfchou/serverless-python-made-great-again"
+    "url": "https://github.com/cfchou/serverless-python-individually"
   },
   "keywords": [
     "serverless",
@@ -24,7 +24,8 @@
   "files": [
     "index.js",
     "package.json",
-    "README.md"
+    "README.md",
+    "example/serverless.yml"
   ],
   "main": "index.js",
   "bin": {},

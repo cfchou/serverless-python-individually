@@ -47,23 +47,24 @@ provider:
 # you can add packaging information here
 package:
   individually: True
-  include:
-#    - include-me.py
-#    - include-me-dir/**
   exclude:
-    - .*
-    - node_modules/**
-    - tmp/**
-#    - exclude-me.py
-#    - exclude-me-dir/**
+    - '**/*'
 
 functions:
   hello:
     # Specify the wrapping handler in the format:
-    # ${function_dir}/wrap.handler
-    # The real handler is set in custom.pyIndividually.wrap:${function}.
+    # ${function_dir}/${wrapName}.handler
+    # The real handler is instead set in custom.pyIndividually.${wrapName}:${function}.
     handler: hello/wrap.handler
+    package:
+      include:
+          - hello/**
 
+  world:
+    handler: world/handler.world
+    package:
+      include:
+          - world/**
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
@@ -80,11 +81,6 @@ functions:
 #    Define function environment variables here
 #    environment:
 #      variable2: value2
-  world:
-    handler: world/wrap.handler
-
-  bye:
-    handler: wrap.handler
 
 
 # you can add CloudFormation resource templates here
@@ -100,22 +96,21 @@ functions:
 #       Value: "Some output value"
 custom:
   pyIndividually:
-    # define your ${wrapName}.py to avoid conflicting with the real handler
-    # The default is 'wrap'
+    # a ${wrapName}.py will be generated for every function.
+    # The default is 'wrap'.
     wrapName: wrap
     # pip install to ${libSubDir} in the dir that the real function handler
     # resides. The default is 'lib'.
-    # e.g. for hello/handler.hello, pip install -t . hello/${libSubDir}
-    # Note: it should not be excluded.
+    # e.g. for function "hello", pip install -t hello/${libSubDir}
     libSubDir: lib
-    # Cleanup artifacts(libSubDir, wrap.py, etc.) created by the plugin.
+    # Cleanup artifacts(${libSubDir}, ${wrapName}.py) created by the plugin.
     # The default is true.
     cleanup: True
-    # Specify the handler for every function in the format:
+
+    # Mapping to the real handler of every function in the format:
     # ${wrapName}:${function}: ${real_handler}
     wrap:hello: hello/handler.hello
     wrap:world: world/handler.world
-    wrap:bye: handler.bye
 
 plugins:
   - serverless-python-individually
