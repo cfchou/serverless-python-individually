@@ -31,8 +31,10 @@ That way, this plugin can help to pack lambda functions with their own dependenc
 Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed. Otherwise,
 > pip install virtualenv
 
+Then,
+> npm install serverless-python-individually
 
-Then, in **serverless.yml**(use the directory above as an example):
+Modify **serverless.yml**(use the directory above as an example):
 ```
 package:
   individually: True
