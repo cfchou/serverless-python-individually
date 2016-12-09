@@ -60,17 +60,17 @@ custom:
   pyIndividually:
     # A ${wrapName}.py will be generated for every function.
     # The default filename is 'wrap.py', but you can change it if that conflicts.
-    wrapName: wrap
+    # wrapName: wrap
 
     # pip install packages to ${libSubDir} 
-    # The default is 'lib'.
-    libSubDir: lib
+    # The default dir is 'lib'.
+    # libSubDir: lib
 
-    # Note ${wrapName}.py and ${libSubDir} will sit in the same directory where the real handler resides.
+    # Note ${wrapName}.py and ${libSubDir} will sit in the same directory where the real handler is.
 
     # Cleanup artifacts(${libSubDir}, ${wrapName}.py) created by the plugin.
     # The default is true.
-    cleanup: True
+    # cleanup: True
 
     # Mapping to the real handler of every function in the format:
     # ${wrapName}:${function}: ${real_handler}
