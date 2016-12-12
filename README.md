@@ -4,64 +4,75 @@
 
 # What's it?
 
-It's a serverless 1.3 plugin that makes packaging multiple lambda functions written in python easier.
+It's a simple plugin for serverless **1.3** that makes it easier to package multiple lambda functions written in python.
 
 
 # Why do I need it?
 
 Say you have multiple lambda functions and each of them has fairly different package requirements.
 It's not economical to pack all dependencies in one big fat zip. Instead, you
-can specify requirements.txt in every function:
+can create **requirements.txt** for every function:
 
 ```
 project
 ├── hello
-|   ├── handler.py
-|   └── requirements.txt
+│   ├── handler.py
+│   └── requirements.txt
 ├── world
-|   ├── handler.py
-|   └── requirements.txt
+│   ├── handler.py
+│   └── requirements.txt
 └── serverless.yml
 ```
 
-Then, this plugin helps to pack lambda functions with their own dependencies.
+That way, this plugin can help to pack lambda functions with their own dependencies.
 
 # How?
-In **serverless.yml**:
+
+Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed. Otherwise,
+> pip install virtualenv
+
+Then,
+> npm install serverless-python-individually
+
+Modify **serverless.yml**(use the directory above as an example):
 ```
 package:
   individually: True
   exclude:
+    # Exclude everything first.
     - '**/*'
 
 functions:
   hello:
-    # Specify the wrapping handler in the format:
+    # Specify wrapping handlers in the format:
     # ${function_dir}/${wrapName}.handler
-    # The real handler is instead set in custom.pyIndividually.${wrapName}:${function}.
+    # The real handler is instead set to custom.pyIndividually.${wrapName}:${function}.
     handler: hello/wrap.handler
     package:
       include:
           - hello/**
 
   world:
-    handler: world/handler.world
+    handler: world/wrap.handler
     package:
       include:
           - world/**
 
 custom:
   pyIndividually:
-    # a ${wrapName}.py will be generated for every function.
-    # The default is 'wrap'.
-    wrapName: wrap
-    # pip install to ${libSubDir} in the dir that the real function handler
-    # resides. The default is 'lib'.
-    # e.g. for function "hello", pip install -t hello/${libSubDir}
-    libSubDir: lib
+    # A ${wrapName}.py will be generated for every function.
+    # The default filename is 'wrap.py', but you can change it if that conflicts.
+    # wrapName: wrap
+
+    # pip install packages to ${libSubDir} 
+    # The default dir is 'lib'.
+    # libSubDir: lib
+
+    # Note ${wrapName}.py and ${libSubDir} will sit in the same directory where the real handler is.
+
     # Cleanup artifacts(${libSubDir}, ${wrapName}.py) created by the plugin.
     # The default is true.
-    cleanup: True
+    # cleanup: True
 
     # Mapping to the real handler of every function in the format:
     # ${wrapName}:${function}: ${real_handler}
@@ -73,7 +84,8 @@ plugins:
 
 ```
 
-After **sls deploy -v**, you end up having multiple **.zip** in **.serverless/**.
+After **sls deploy -v**, you end up having many .zip in **.serverless/**.
+You can examine their content like:
 
 ```
 > tar tvzf .serverless/aws-python-devcf1612-hello.zip
@@ -88,10 +100,23 @@ hello/lib/...
 
 ```
 
+Notice that **wrap.py** and **lib/** are created for you.
+
+This plugin also works for **sls deploy function -f hello**, only that the
+whole .serverless directory will be deleted by the framework so you can't examine the .zip.
 
 # Credit
-This plugin heavily influenced by @logandk [serverless-wsgi](https://github.com/logandk/serverless-wsgi).
-In fact, the [python requirement installer](https://github.com/logandk/serverless-wsgi/blob/master/requirements.py) is directly taken from his repo.
+This plugin is heavily influenced by [serverless-wsgi](https://github.com/logandk/serverless-wsgi) from [@logandk](https://github.com/logandk).
+In fact, the [requirement installer](https://github.com/cfchou/serverless-python-individually/blob/master/requirements.py) is directly borrowed from his repo.
+If your lambda is a wsgi app, then must check out his work.
+
+
+# Note
+As of this writing, I just start using serverless **1.3**. This plugin may or may
+not work with other 1.x versions but I haven't tried. 
+
+
+
 
 
 

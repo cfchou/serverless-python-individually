@@ -1,6 +1,6 @@
 {
   "name": "serverless-python-individually",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "engines": {
     "node": ">=4.0"
   },
@@ -19,13 +19,14 @@
     "aws lambda",
     "amazon",
     "amazon web services",
+    "python",
     "serverless.com"
   ],
   "files": [
     "index.js",
     "package.json",
     "README.md",
-    "example/serverless.yml"
+    "requirements.py"
   ],
   "main": "index.js",
   "bin": {},
