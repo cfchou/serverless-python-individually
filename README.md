@@ -73,7 +73,7 @@ plugins:
 
 ```
 
-After **sls deploy -v**, you end up have two **.zip** in **.serverless/**.
+After **sls deploy -v**, you end up having multiple **.zip** in **.serverless/**.
 
 ```
 > tar tvzf .serverless/aws-python-devcf1612-hello.zip

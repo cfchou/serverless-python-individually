@@ -8,6 +8,7 @@ const _ = require('lodash');
 const Path = require('path');
 const Fse = require('fs-extra');
 const ChildProcess = require('child_process');
+const process = require('process');
 
 BbPromise.promisifyAll(Fse);
 BbPromise.promisifyAll(ChildProcess);
@@ -45,6 +46,30 @@ class PythonIndividually {
       this.cleanup = pyIndividually.cleanup;
     }
     this.log('cleanup: ' + this.cleanup);
+    if (_.has(pyIndividually, 'dockerizedPip')) {
+      if (pyIndividually.dockerizedPip) {
+        const ret = ChildProcess.spawnSync('docker', ['version']);
+        if (ret.error) {
+          throw new this.serverless.classes.Error(
+            '[pyIndividually] custom.dockerizedPip is true but docker version failed: ' +
+            ret.error.message);
+        }
+        if (ret.stderr.length != 0) {
+          throw new this.serverless.classes.Error(
+            '[pyIndividually] custom.dockerizedPip is true but docker version failed: ' +
+            ret.stderr.toString());
+        }
+        this.log('docker version');
+        const out = ret.stdout.toString();
+        this.log(out);
+        if (!out.startsWith('Client') || out.search('Server') == -1) {
+          throw new this.serverless.classes.Error(
+            '[pyIndividually] custom.dockerizedPip is true but docker is not properly installed/setup.');
+        }
+      }
+      this.dockerizedPip = pyIndividually.dockerizedPip;
+    }
+    this.log('dockerizedPip: ' + this.dockerizedPip);
     return BbPromise.resolve();
   };
 
@@ -107,13 +132,18 @@ class PythonIndividually {
     const wrapperDir = target.function.handler.substring(0,
       target.function.handler.length - wrapper.length);
     const packagePath = Path.join(wrapperDir, this.libSubDir);
-    const requirements = Path.join(wrapperDir, 'requirements.txt');
+    const requirementsPy = Path.join(packagePath, '_requirements.py');
 
     return this.wrap(wrapperDir, wrapperPy, this.libSubDir, target.realHandler)
-      .then(_.partial(_.bind(this.fileAccessable, this), requirements))
-      //.then(_.partial(Fse.ensureDirAsync, packagePath))
-      .then(() => { return Fse.ensureDirAsync(packagePath)})
-      .then(_.partial(_.bind(this.install, this), packagePath, requirements))
+      .then(_.partial(_.bind(this.fileAccessable, this),
+        Path.join(wrapperDir, 'requirements.txt')))
+      .then(() => { return Fse.ensureDirAsync(packagePath); })
+      .then(() => {
+        return Fse.copyAsync(
+          Path.join(__dirname, 'requirements.py'), requirementsPy);
+      })
+      .then(_.partial(_.bind(this.install, this), wrapperDir, this.libSubDir))
+      .then(() => { return Fse.removeAsync(requirementsPy); })
       .then(BbPromise.resolve,
         _.partial(_.bind(this.catchIgnorableError, this), undefined));
   };
@@ -175,13 +205,28 @@ def handler(event, context):
     return Fse.outputFileAsync(wrapperPath, content);
   };
 
-  install(packagePath, requirements) {
-    const ret = ChildProcess.spawnSync('python', [
-      Path.resolve(__dirname, 'requirements.py'),
-      requirements, packagePath]);
+  install(dir, libDir) {
+    const cmd = ((dockerized) => {
+      if (dockerized) {
+        // docker run -v $(pwd):/var/task lambci/lambda:build-python2.7 python requirements.py requirements.txt lib
+        return ['docker', 'run', '-v', process.cwd() + ':/var/task',
+          'lambci/lambda:build-python2.7', 'python',
+          Path.join(dir, libDir, '_requirements.py'),
+          Path.join(dir, 'requirements.txt'),
+          Path.join(dir, libDir)];
+      } else {
+        return ['python',
+          Path.join(dir, libDir, '_requirements.py'),
+          Path.join(dir, 'requirements.txt'),
+          Path.join(dir, libDir)];
+      }
+    })(this.dockerizedPip);
+
+    this.log('Installing packagings: ' + cmd.join(' '));
+    const ret = ChildProcess.spawnSync(cmd[0], cmd.slice(1));
     this.log(ret.stderr.toString());
     this.log(ret.stdout.toString());
-    if (ret.error) {
+    if (ret.error || ret.stderr.length != 0) {
       return BbPromise.reject(res.error)
     }
     return BbPromise.resolve()
@@ -233,6 +278,7 @@ def handler(event, context):
     this.libSubDir = 'lib';
     // overwritten by custom.pyIndividually.cleanup
     this.cleanup = true;
+    this.dockerizedPip = false;
     this.hooks = {
       'before:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
         .then(this.overwriteDefault)
