@@ -1,13 +1,21 @@
-# serverless-python-individually
+#serverless-python-individually
 
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
 
-# What's it?
+- [What's it?](#whats-it)
+- [Why do I need it?](#why-do-i-need-it)
+- [How?](#how)
+- [How to install platform-dependent packages?](#How-to-install-platform-dependent-packages)
+- [Credit](#credit)
+- [Note](#note)
+
+
+#What's it?
 
 It's a simple plugin for serverless **1.3** that makes it easier to package multiple lambda functions written in python.
 
 
-# Why do I need it?
+#Why do I need it?
 
 Say you have multiple lambda functions and each of them has fairly different package requirements.
 It's not economical to pack all dependencies in one big fat zip. Instead, you
@@ -26,13 +34,19 @@ project
 
 That way, this plugin can help to pack lambda functions with their own dependencies.
 
-# How?
+Moreover, thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), it can pack platform-dependent binary packages too. More on that please read [How to install platform-dependent packages](#How-to-install-platform-dependent-packages).
 
-Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed. Otherwise,
-> pip install virtualenv
+
+#How?
+
+Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed.
+Otherwise,
+
+`pip install virtualenv`
 
 Then,
-> npm install serverless-python-individually
+
+`npm install serverless-python-individually`
 
 Modify **serverless.yml**(use the directory above as an example):
 ```
@@ -102,16 +116,40 @@ hello/lib/...
 
 Notice that **wrap.py** and **lib/** are created for you.
 
-This plugin also works for **sls deploy function -f hello**, only that the
+This plugin also works for like **sls deploy function -f hello**, only that the
 whole .serverless directory will be deleted by the framework so you can't examine the .zip.
 
-# Credit
+
+#How to Install platform-dependent packages
+There're platform-dependent dependencies like *subprocess32*, *bcrypt*, etc
+., cannot simply be pip installed, packed and sent to lambda(if you are on a Mac
+or anything not Linux x86_64).
+One way to get around is to install them in a aws-lambda architecture 
+identical EC2 or VM. That's inconvenient to say the least.
+Thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), we can
+launch a container for the same purpose at our disposal. All you need to do is,
+
+- Make sure **docker** is installed and properly set up. I.e. when running
+    `docker version` you should see information about Client and Server.
+- `docker pull lambci/lambda:build-python2.7` to pull the image in advance.
+- in **serverless.yml**:
+    ```
+    custom:
+        ...
+        # launches a container for installing packages.
+        # The default is False.
+        dockerizedPip: True
+    ```
+
+#Credit
 This plugin is heavily influenced by [serverless-wsgi](https://github.com/logandk/serverless-wsgi) from [@logandk](https://github.com/logandk).
 In fact, the [requirement installer](https://github.com/cfchou/serverless-python-individually/blob/master/requirements.py) is directly borrowed from his repo.
 If your lambda is a wsgi app, then must check out his work.
 
+Also thanks to [@docker-lambda](https://github.com/lambci/docker-lambda) to provide aws lambda runtime equivalent docker image.
 
-# Note
+
+#Note
 As of this writing, I just start using serverless **1.3**. This plugin may or may
 not work with other 1.x versions but I haven't tried. 
 
