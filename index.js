@@ -226,7 +226,7 @@ def handler(event, context):
     this.log(ret.stderr.toString());
     this.log(ret.stdout.toString());
     if (ret.error || ret.stderr.length != 0) {
-      return BbPromise.reject(res.error)
+      return BbPromise.reject(ret.error)
     }
     return BbPromise.resolve()
   }

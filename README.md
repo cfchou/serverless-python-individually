@@ -55,7 +55,7 @@ package:
     - '**/*'
 
 functions:
-  hello:
+  helloFunc:
     # Specify wrapping handlers in the format:
     # ${function_dir}/${wrapName}.handler
     # The real handler is instead set to custom.pyIndividually.${wrapName}:${function}.
@@ -64,7 +64,7 @@ functions:
       include:
           - hello/**
 
-  world:
+  worldFunc:
     handler: world/wrap.handler
     package:
       include:
@@ -89,8 +89,8 @@ custom:
     # Mapping to the real handler of every function in the format:
     # ${wrapName}:${function}: ${real_handler}
     # If there's no mapping for a function, then that function will not be touced by this plugin.
-    wrap:hello: hello/handler.hello
-    wrap:world: world/handler.world
+    wrap:helloFunc: hello/handler.hello
+    wrap:worldFunnc: world/handler.world
 
 plugins:
   - serverless-python-individually
