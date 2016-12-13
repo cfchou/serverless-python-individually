@@ -6,7 +6,7 @@
 - [Why do I need it?](#why-do-i-need-it)
 - [How?](#how)
 - [How to install platform-dependent packages?](#how-to-install-platform-dependent-packages)
-- Demo(#demo)
+- [Demo](#demo)
 - [Credit](#credit)
 - [Note](#note)
 
