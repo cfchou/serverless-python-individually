@@ -208,7 +208,6 @@ def handler(event, context):
   install(dir, libDir) {
     const cmd = ((dockerized) => {
       if (dockerized) {
-        // docker run -v $(pwd):/var/task lambci/lambda:build-python2.7 python requirements.py requirements.txt lib
         return ['docker', 'run', '-v', process.cwd() + ':/var/task',
           'lambci/lambda:build-python2.7', 'python',
           Path.join(dir, libDir, '_requirements.py'),

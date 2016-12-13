@@ -5,7 +5,8 @@
 - [What's it?](#whats-it)
 - [Why do I need it?](#why-do-i-need-it)
 - [How?](#how)
-- [How to install platform-dependent packages?](#How-to-install-platform-dependent-packages)
+- [How to install platform-dependent packages?](#how-to-install-platform-dependent-packages)
+- Demo(#demo)
 - [Credit](#credit)
 - [Note](#note)
 
@@ -17,9 +18,7 @@ It's a simple plugin for serverless **1.3** that makes it easier to package mult
 
 #Why do I need it?
 
-Say you have multiple lambda functions and each of them has fairly different package requirements.
-It's not economical to pack all dependencies in one big fat zip. Instead, you
-can create **requirements.txt** for every function:
+Say you have multiple lambda functions and each of them has fairly different package requirements. It's not economical to pack all dependencies in one big fat zip. Instead, you can create **requirements.txt** for every function:
 
 ```
 project
@@ -34,13 +33,12 @@ project
 
 That way, this plugin can help to pack lambda functions with their own dependencies.
 
-Moreover, thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), it can pack platform-dependent binary packages too. More on that please read [How to install platform-dependent packages](#How-to-install-platform-dependent-packages).
+Moreover, if you are on a Mac, thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), it can pack binary packages for Linux x86_64 too. More on that please read [How to install platform-dependent packages](#how-to-install-platform-dependent-packages).
 
 
 #How?
 
-Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed.
-Otherwise,
+Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed. Otherwise,
 
 `pip install virtualenv`
 
@@ -90,6 +88,7 @@ custom:
 
     # Mapping to the real handler of every function in the format:
     # ${wrapName}:${function}: ${real_handler}
+    # If there's no mapping for a function, then that function will not be touced by this plugin.
     wrap:hello: hello/handler.hello
     wrap:world: world/handler.world
 
@@ -98,8 +97,7 @@ plugins:
 
 ```
 
-After **sls deploy -v**, you end up having many .zip in **.serverless/**.
-You can examine their content like:
+After **sls deploy -v**, you end up having many .zip in **.serverless/**. You can examine their content like:
 
 ```
 > tar tvzf .serverless/aws-python-devcf1612-hello.zip
@@ -116,35 +114,30 @@ hello/lib/...
 
 Notice that **wrap.py** and **lib/** are created for you.
 
-This plugin also works for like **sls deploy function -f hello**, only that the
-whole .serverless directory will be deleted by the framework so you can't examine the .zip.
+This plugin also works for **sls deploy function -f**, only that the whole .serverless directory will be deleted by the framework so you can't examine the .zip.
 
 
-#How to Install platform-dependent packages
-There're platform-dependent dependencies like *subprocess32*, *bcrypt*, etc
-., cannot simply be pip installed, packed and sent to lambda(if you are on a Mac
-or anything not Linux x86_64).
-One way to get around is to install them in a aws-lambda architecture 
-identical EC2 or VM. That's inconvenient to say the least.
-Thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), we can
-launch a container for the same purpose at our disposal. All you need to do is,
+#How to install platform-dependent packages
+If you are on a Mac, there're platform-dependent dependencies like *subprocess32*, *bcrypt*, etc., cannot simply be pip installed, packed and sent to lambda. One way to get around is to install them in a aws-lambda architecture identical EC2 or a VM. That's inconvenient to say the least. Thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), we can launch a container for the same purpose at our disposal. All you need to do is:
 
-- Make sure **docker** is installed and properly set up. I.e. when running
-    `docker version` you should see information about Client and Server.
+- Make sure [docker](https://docs.docker.com/engine/installation/mac/) is installed and properly set up. I.e. when running `docker version` you should see information about client and server.
 - `docker pull lambci/lambda:build-python2.7` to pull the image in advance.
-- in **serverless.yml**:
+- Set **dockerizedPip** in **serverless.yml**:
     ```
     custom:
-        ...
-        # launches a container for installing packages.
-        # The default is False.
-        dockerizedPip: True
+        pyIndividually:
+            # ...
+
+            # launches a container for installing packages.
+            # The default is False.
+            dockerizedPip: True
     ```
 
+#Demo
+A [demo](https://github.com/cfchou/serverless-python-individually-demo) is there for you to get started.
+
 #Credit
-This plugin is heavily influenced by [serverless-wsgi](https://github.com/logandk/serverless-wsgi) from [@logandk](https://github.com/logandk).
-In fact, the [requirement installer](https://github.com/cfchou/serverless-python-individually/blob/master/requirements.py) is directly borrowed from his repo.
-If your lambda is a wsgi app, then must check out his work.
+This plugin is heavily influenced by [serverless-wsgi](https://github.com/logandk/serverless-wsgi) from [@logandk](https://github.com/logandk). In fact, the [requirement installer](https://github.com/cfchou/serverless-python-individually/blob/master/requirements.py) is directly borrowed from his repo. If your lambda is a wsgi app, then must check out his work.
 
 Also thanks to [@docker-lambda](https://github.com/lambci/docker-lambda) to provide aws lambda runtime equivalent docker image.
 
