@@ -14,6 +14,11 @@ BbPromise.promisifyAll(Fse);
 BbPromise.promisifyAll(ChildProcess);
 
 
+/**
+ * IgnorableError, like Error, breaks the promise chain unless we catch it.
+ * It's sole purpose is to distinguish with other Errors. So that it can be
+ * seletively caught.
+ */
 function IgnorableError(message) {
   this.message = message;
   this.name = 'IgnorableError';
@@ -26,52 +31,78 @@ IgnorableError.prototype.constructor = IgnorableError;
 
 class PythonIndividually {
 
-  overwriteDefault() {
-    const custom = this.serverless.service.custom;
-    if (!_.has(custom, 'pyIndividually')) {
-      //throw new this.serverless.classes.Error(
-      return BbPromise.reject(new IgnorableError(
-        'no custom.pyIndividually found.'));
+  isEnabled() {
+    if (this.options['pi-disable']) {
+      throw new IgnorableError('disabled due to --pi-disable')
     }
-    const pyIndividually = custom.pyIndividually;
-    if (_.has(pyIndividually, 'wrapName') && pyIndividually.wrapName) {
-      this.wrapName = pyIndividually.wrapName;
+  }
+
+  needCleanup() {
+    if (!this.cleanup) {
+      throw new IgnorableError('Cleanup is disabled');
+    }
+  }
+
+  overwriteDefault() {
+    const pyIndividually = this.serverless.service.custom.pyIndividually;
+    if (!pyIndividually) {
+      throw new IgnorableError('no custom.pyIndividually found.');
+    }
+
+    if (pyIndividually['wrapName']) {
+      this.wrapName = pyIndividually['wrapName'];
     }
     this.log('wrapName: ' + this.wrapName);
-    if (_.has(pyIndividually, 'libSubDir') && pyIndividually.libSubDir) {
-      this.libSubDir = pyIndividually.libSubDir;
+
+    if (pyIndividually['libSubDir']) {
+      this.libSubDir = pyIndividually['libSubDir'];
     }
     this.log('libSubDir: ' + this.libSubDir);
-    if (_.has(pyIndividually, 'cleanup')) {
-      this.cleanup = pyIndividually.cleanup;
-    }
-    this.log('cleanup: ' + this.cleanup);
-    if (_.has(pyIndividually, 'dockerizedPip')) {
-      if (pyIndividually.dockerizedPip) {
-        const ret = ChildProcess.spawnSync('docker', ['version']);
-        if (ret.error) {
-          throw new this.serverless.classes.Error(
-            '[pyIndividually] custom.dockerizedPip is true but docker version failed: ' +
-            ret.error.message);
-        }
-        if (ret.stderr.length != 0) {
-          throw new this.serverless.classes.Error(
-            '[pyIndividually] custom.dockerizedPip is true but docker version failed: ' +
-            ret.stderr.toString());
-        }
-        this.log('docker version');
-        const out = ret.stdout.toString();
-        this.log(out);
-        if (!out.startsWith('Client') || out.search('Server') == -1) {
-          throw new this.serverless.classes.Error(
-            '[pyIndividually] custom.dockerizedPip is true but docker is not properly installed/setup.');
-        }
+
+    const updater = (key, cliOption, yamlOption, origin) => {
+      const enable = 'pi-' + key;
+      const disable = 'pi-no-' + key;
+      if (cliOption[enable] && cliOption[disable]) {
+        throw new that.serverless.classes.Error(
+          '[pyIndividually] --' + enable + ' --' + disable + ' both presented');
       }
-      this.dockerizedPip = pyIndividually.dockerizedPip;
+      if (cliOption[enable]) {
+        return true;
+      } else if (cliOption[disable]) {
+        return false;
+      } else if (yamlOption[key]) {
+        return yamlOption[key];
+      }
+      return origin;
     }
+
+    this.cleanup = updater('cleanup', this.options, pyIndividually, this.clean)
+    this.log('cleanup: ' + this.cleanup);
+    this.dockerizedPip = updater('dockerizedPip', this.options, pyIndividually,
+      this.dockerizedPip)
     this.log('dockerizedPip: ' + this.dockerizedPip);
-    return BbPromise.resolve();
   };
+
+  checkDocker() {
+    if (this.dockerizedPip) {
+      this.log('docker version');
+      const ret = ChildProcess.spawnSync('docker', ['version']);
+      if (ret.error) {
+        throw new this.serverless.classes.Error(
+          '[pyIndividually] docker version: ' + ret.error.message);
+      }
+      if (ret.stderr.length != 0) {
+        throw new this.serverless.classes.Error(
+          '[pyIndividually] docker version: ' + ret.stderr.toString());
+      }
+      const out = ret.stdout.toString();
+      this.log(out);
+      if (!out.startsWith('Client') || out.search('Server') == -1) {
+        throw new this.serverless.classes.Error(
+          '[pyIndividually] docker version invalid output: ' + out);
+      }
+    }
+  }
 
   selectOne() {
     const pyIndividually = this.serverless.service.custom.pyIndividually;
@@ -82,14 +113,13 @@ class PythonIndividually {
 
     if (_.has(pyIndividually, targetKey) &&
       _.endsWith(targetObj.handler, wrapper)) {
-      return BbPromise.resolve({
+      return {
         'name': target,
         'function': targetObj,
         'realHandler': pyIndividually[targetKey]
-      })
+      };
     }
-    return BbPromise.reject(new IgnorableError(
-      'custom.pyIndividually is not set up properly'));
+    throw new IgnorableError('custom.pyIndividually is not set up properly');
   }
 
   selectAll() {
@@ -111,17 +141,16 @@ class PythonIndividually {
     // selection
     return _.map(targetKeys, (targetKey) => {
       const target = targetKey.substring(prefixLen);
-      return BbPromise.resolve({
+      return {
         'name': target,
         'function': functions[target],
         'realHandler': pyIndividually[targetKey]
-      })
+      };
     });
   }
 
   /**
    * Create a wrapper. Install packages.
-   * IgnorableError are ignored and replaced with BbPromise.resolve().
    * @param target
    * @returns {Promise.<undefined>}
    */
@@ -134,23 +163,21 @@ class PythonIndividually {
     const packagePath = Path.join(wrapperDir, this.libSubDir);
     const requirementsPy = Path.join(packagePath, '_requirements.py');
 
-    return this.wrap(wrapperDir, wrapperPy, this.libSubDir, target.realHandler)
-      .then(_.partial(_.bind(this.fileAccessable, this),
-        Path.join(wrapperDir, 'requirements.txt')))
+    return this.wrap(wrapperDir, wrapperPy, this.libSubDir, target.realHandler).bind(this)
+      .then(_.partial(this.fileAccessable, Path.join(wrapperDir, 'requirements.txt'))).bind(this)
+      .then(_.partial(this.hard_remove, [wrapperPy, packagePath])
       .then(() => { return Fse.ensureDirAsync(packagePath); })
       .then(() => {
         return Fse.copyAsync(
           Path.join(__dirname, 'requirements.py'), requirementsPy);
-      })
-      .then(_.partial(_.bind(this.install, this), wrapperDir, this.libSubDir))
-      .then(() => { return Fse.removeAsync(requirementsPy); })
-      .then(BbPromise.resolve,
-        _.partial(_.bind(this.catchIgnorableError, this), undefined));
+      }).bind(this)
+      .then(_.partial(this.install, wrapperDir, this.libSubDir))
+      .then(() => { return Fse.removeAsync(requirementsPy); }).bind(this)
+      .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined));
   };
 
   /**
-   * Replace exceptions from fs.access with IgnorableError for not interrupting
-   * the promise chain.
+   * Replace exceptions from fs.access with IgnorableError
    * @param filename
    * @returns {Promise.<undefined>|*}
    */
@@ -166,18 +193,38 @@ class PythonIndividually {
       });
   }
 
-  remove(dir) {
-    return Fse.removeAsync(dir)
-      .then(BbPromise.resolve,
-        (err) => {
+
+  /**
+   * soft_remove doesn't break promise chain even seeing failures.
+   * @param paths
+   * @returns {Promise.<TResult>|*}
+   */
+  soft_remove(paths) {
+    const that = this;
+    // unlike all/map, settle waits for everyone despite of rejections/exceptions.
+    return BbPromise.settle(_.map(paths, Fse.removeAsync))
+      .then((results) => {
+        _.forEach(results, (r) => {
           if (process.env.SLS_DEBUG) {
-            this.log(err.stack);
+            that.log(r.reason());
           }
-          return BbPromise.reject(new IgnorableError(
-            'Can\'t remove ' + dir));
         });
+        return BbPromise.resolve();
+      });
   }
 
+  hard_remove(paths) {
+    return BbPromise.all(_.map(paths, Fse.removeAsync));
+  }
+
+  /**
+   *
+   * @param dir
+   * @param filename
+   * @param libDir
+   * @param realHandler
+   * @returns {Promise.<undefined>|*}
+   */
   wrap(dir, filename, libDir, realHandler) {
     // realHandler: hello/hello.handler
     // handler: hello.handler
@@ -205,6 +252,12 @@ def handler(event, context):
     return Fse.outputFileAsync(wrapperPath, content);
   };
 
+  /**
+   *
+   * @param dir
+   * @param libDir
+   * @returns {Promise.<undefined>|*}
+   */
   install(dir, libDir) {
     const cmd = ((dockerized) => {
       if (dockerized) {
@@ -236,7 +289,7 @@ def handler(event, context):
    * that the promise chain goes on.
    * @param value
    * @param e
-   * @returns {*}
+   * @returns {Promise.<undefined>|*}
    */
   catchIgnorableError(value, e) {
     if (e instanceof IgnorableError) {
@@ -254,6 +307,11 @@ def handler(event, context):
     }
   };
 
+  /**
+   *
+   * @param target
+   * @returns {Promise.<undefined>|*}
+   */
   clean(target) {
     this.log('Cleaning packages for ' + target.name);
     const wrapper = this.wrapName + '.handler';
@@ -263,7 +321,9 @@ def handler(event, context):
     const packagePath = Path.join(wrapperDir, this.libSubDir);
     const wrapperPath = Path.join(wrapperDir, wrapperPy);
     this.log('Deleting ' + wrapperPath + ', ' + packagePath);
-    return BbPromise.settle([this.remove(wrapperPath), this.remove(packagePath)])
+    //return BbPromise.settle([this.remove(wrapperPath),
+    //  this.remove(packagePath)])
+    return this.soft_remove([wrapperPath, packagePath]);
   };
 
 
@@ -271,46 +331,36 @@ def handler(event, context):
     this.serverless = serverless;
     this.options = options;
     this.log = (msg) => { serverless.cli.log('[pyIndividually] ' + msg); };
-    // overwritten by custom.pyIndividually.wrapName
+    // overwritten by overwriteDefault()
     this.wrapName = 'wrap';
-    // overwritten by custom.pyIndividually.libSubDir
     this.libSubDir = 'lib';
-    // overwritten by custom.pyIndividually.cleanup
     this.cleanup = true;
     this.dockerizedPip = false;
     this.hooks = {
       'before:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
+        .then(this.isEnabled)
         .then(this.overwriteDefault)
         .then(this.selectAll)
-        .map(this.work)
+        .map(this.work).bind(this)
         .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined)),
 
       'after:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
-        .then(_.bind(() => {
-          if (!this.cleanup) {
-            // fall through until catch
-            return BbPromise.reject(new IgnorableError('Cleanup is disabled'))
-          }
-          return BbPromise.resolve();
-        }, this))
+        .then(this.isEnabled)
+        .then(this.needCleanup)
         .then(this.selectAll)
-        .map(this.clean)
+        .map(this.clean).bind(this)
         .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined)),
 
       'before:deploy:function:packageFunction': () => BbPromise.bind(this)
+        .then(this.isEnabled)
         .then(this.overwriteDefault)
         .then(this.selectOne)
-        .then(this.work)
+        .then(this.work).bind(this)
         .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined)),
 
       'after:deploy:function:packageFunction': () => BbPromise.bind(this)
-        .then(_.bind(() => {
-          if (!this.cleanup) {
-            // fall through until catch
-            return BbPromise.reject(new IgnorableError('Cleanup is disabled'))
-          }
-          return BbPromise.resolve();
-        }, this))
+        .then(this.isEnabled)
+        .then(this.needCleanup)
         .then(this.selectOne)
         .then(this.clean, _.partial(this.catchIgnorableError, undefined)),
     };

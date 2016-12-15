@@ -6,6 +6,7 @@
 - [Why do I need it?](#why-do-i-need-it)
 - [How?](#how)
 - [How to install platform-dependent packages?](#how-to-install-platform-dependent-packages)
+- [Advanced settings](#advanced-settings)
 - [Demo](#demo)
 - [Credit](#credit)
 - [Note](#note)
@@ -46,61 +47,50 @@ Then,
 
 `npm install serverless-python-individually`
 
-Modify **serverless.yml**(use the directory above as an example):
+Your **serverless.yml** may look something like:
+
+```
+functions:
+  helloFunc:
+    handler: hello/handler.hello
+  worldFunc:
+    handler: world/handler
+```
+
+The plugin works by replacing the **real handlers**(e.g. `hello/handler.hello`) with a wrapper generated on the fly(e.g. `hello/wrap.handler`). The real handlers are instead set in **custom.pyIndividually** section.
+
+So the minimum modification would be:
+
 ```
 package:
   individually: True
   exclude:
     # Exclude everything first.
     - '**/*'
-
 functions:
   helloFunc:
-    # Specify wrapping handlers in the format:
-    # ${function_dir}/${wrapName}.handler
-    # The real handler is instead set to custom.pyIndividually.${wrapName}:${function}.
     handler: hello/wrap.handler
     package:
       include:
-          - hello/**
-
+        - hello/**
   worldFunc:
     handler: world/wrap.handler
     package:
       include:
-          - world/**
-
+        - world/**
 custom:
   pyIndividually:
-    # A ${wrapName}.py will be generated for every function.
-    # The default filename is 'wrap.py', but you can change it if that conflicts.
-    # wrapName: wrap
-
-    # pip install packages to ${libSubDir} 
-    # The default dir is 'lib'.
-    # libSubDir: lib
-
-    # Note ${wrapName}.py and ${libSubDir} will sit in the same directory where the real handler is.
-
-    # Cleanup artifacts(${libSubDir}, ${wrapName}.py) created by the plugin.
-    # The default is true.
-    # cleanup: True
-
-    # Mapping to the real handler of every function in the format:
-    # ${wrapName}:${function}: ${real_handler}
-    # If there's no mapping for a function, then that function will not be touced by this plugin.
     wrap:helloFunc: hello/handler.hello
     wrap:worldFunnc: world/handler.world
 
 plugins:
   - serverless-python-individually
-
 ```
 
 After **sls deploy -v**, you end up having many .zip in **.serverless/**. You can examine their content like:
 
 ```
-> tar tvzf .serverless/aws-python-devcf1612-hello.zip
+> tar tvzf .serverless/aws-python-dev-helloFunc.zip
 
 hello/handler.py
 hello/requirements.txt
@@ -112,9 +102,7 @@ hello/lib/...
 
 ```
 
-Notice that **wrap.py** and **lib/** are created for you.
-
-This plugin also works for **sls deploy function -f**, only that the whole .serverless directory will be deleted by the framework so you can't examine the .zip.
+Notice that **wrap.py** and **lib/** are created for you. This plugin also works for **sls deploy function -f**.
 
 
 #How to install platform-dependent packages
@@ -128,10 +116,60 @@ If you are on a Mac, there're platform-dependent dependencies like *subprocess32
         pyIndividually:
             # ...
 
-            # launches a container for installing packages.
+            # Launches a container for installing packages.
             # The default is False.
             dockerizedPip: True
     ```
+
+#Advanced settings
+
+There are a couple of options that can be handy for you.
+
+##severless.yml
+
+* **wrap.py** and **lib/** are created during packaging in the same directory where the real handler is. If you are not happy about the naming, you can change `wrapName` and `libSubDir`. 
+
+* **wrap.py** and **lib/** by default will be deleted after packaging. They can be preserved by setting `cleanup` to False.
+
+
+```
+custom:
+  pyIndividually:
+    # A ${wrapName}.py will be generated for every function.
+    # The default filename is 'wrap.py', but you can change it to avoid name clashes.
+    wrapName: wrapABC
+
+    # pip install packages to ${libSubDir} under the each functions' directory
+    # The default dir is 'lib'.
+    # libSubDir: lib
+
+
+    # Cleanup ${libSubDir} and ${wrapName}.py created by the plugin.
+    # The default is True.
+    # cleanup: True
+
+    # Mapping to the real handler of every function in the format:
+    # ${wrapName}:${functionName}: ${real_handler}
+    # If there's no mapping for a function, then that function will not be touced by this plugin.
+    wrapABC:helloFunc: hello/handler.hello
+    wrapABC:worldFunnc: world/handler.world
+
+    # See [How to install platform-dependent package]
+    # The default is False.
+    # dockerizedPip: False
+
+```
+
+
+##Command line options
+
+`sls deploy` is also extended with a few options:
+
+* `--pi-cleanup`/`--pi-no-cleanup` overwrite `cleanup` in serverless.yml
+
+
+
+
 
 #Demo
 A [demo](https://github.com/cfchou/serverless-python-individually-demo) is there for you to get started.
