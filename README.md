@@ -137,7 +137,7 @@ custom:
   pyIndividually:
     # A ${wrapName}.py will be generated for every function.
     # The default filename is 'wrap.py', but you can change it to avoid name clashes.
-    wrapName: wrapABC
+    wrapName: wrapFoo
 
     # pip install packages to ${libSubDir} under the each functions' directory
     # The default dir is 'lib'.
@@ -151,8 +151,8 @@ custom:
     # Mapping to the real handler of every function in the format:
     # ${wrapName}:${functionName}: ${real_handler}
     # If there's no mapping for a function, then that function will not be touced by this plugin.
-    wrapABC:helloFunc: hello/handler.hello
-    wrapABC:worldFunnc: world/handler.world
+    wrapFoo:helloFunc: hello/handler.hello
+    wrapFoo:worldFunnc: world/handler.world
 
     # See [How to install platform-dependent package]
     # The default is False.
@@ -163,9 +163,22 @@ custom:
 
 ##Command line options
 
-`sls deploy` is also extended with a few options:
+`sls deploy` is also extended with a few more options:
 
-* `--pi-cleanup`/`--pi-no-cleanup` overwrite `cleanup` in serverless.yml
+* `--pi-cleanup`/`--pi-no-cleanup` overwrite `cleanup` in serverless.yml.
+
+* `--pi-dockerizedPip`/`--pi-no-dockerizedPip` overwrite `dockerizedPip` in serverless.yml.
+
+* If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin:
+
+    ```
+> sls deploy --pi-no-cleanup  # wrap.py and lib/* are not deleted
+> # ...
+> # do some work. requirements.txt is not changed anyhow.
+> sls deploy --pi-disable
+    ```
+
+
 
 
 
