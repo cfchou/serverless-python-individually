@@ -6,7 +6,7 @@
 - [Why do I need it?](#why-do-i-need-it)
 - [How?](#how)
 - [How to install platform-dependent packages?](#how-to-install-platform-dependent-packages)
-- [Advanced settings](#advanced-settings)
+- [Advanced configuration](#advanced-configuration)
 - [Demo](#demo)
 - [Credit](#credit)
 - [Note](#note)
@@ -34,7 +34,7 @@ project
 
 That way, this plugin can help to pack lambda functions with their own dependencies.
 
-Moreover, if you are on a Mac, thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), it can pack binary packages for Linux x86_64 too. More on that please read [How to install platform-dependent packages](#how-to-install-platform-dependent-packages).
+Moreover, if you are on a Mac, thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), it can pull packages for Linux x86_64 too. More on that please read [How to install platform-dependent packages](#how-to-install-platform-dependent-packages).
 
 
 #How?
@@ -87,7 +87,7 @@ plugins:
   - serverless-python-individually
 ```
 
-After **sls deploy -v**, you end up having many .zip in **.serverless/**. You can examine their content like:
+After **sls deploy**, you end up having many .zip in **.serverless/**. You can examine their content like:
 
 ```
 > tar tvzf .serverless/aws-python-dev-helloFunc.zip
@@ -102,15 +102,16 @@ hello/lib/...
 
 ```
 
-Notice that **wrap.py** and **lib/** are created for you. This plugin also works for **sls deploy function -f**.
+Notice that **wrap.py** and **lib/** are created for you. All dependencies should have been pulled and installed in **lib/**.
+This plugin also works for **sls deploy function -f**.
 
 
 #How to install platform-dependent packages
-If you are on a Mac, there're platform-dependent dependencies like *subprocess32*, *bcrypt*, etc., cannot simply be pip installed, packed and sent to lambda. One way to get around is to install them in a aws-lambda architecture identical EC2 or a VM. That's inconvenient to say the least. Thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), we can launch a container for the same purpose at our disposal. All you need to do is:
+If you are on a Mac, there're platform-dependent dependencies like *subprocess32*, *bcrypt*, etc., cannot simply be pip installed. One way to get around is to launch a aws-lambda architecture identical EC2 or a VM to do the job. That's inconvenient to say the least. Thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), we can launch a container for the same purpose at our disposal. All you need to do is:
 
 - Make sure [docker](https://docs.docker.com/engine/installation/mac/) is installed and properly set up. I.e. when running `docker version` you should see information about client and server.
 - `docker pull lambci/lambda:build-python2.7` to pull the image in advance.
-- Set **dockerizedPip** in **serverless.yml**:
+- Turn on **dockerizedPip** in **serverless.yml**:
     ```
     custom:
         pyIndividually:
@@ -121,9 +122,9 @@ If you are on a Mac, there're platform-dependent dependencies like *subprocess32
             dockerizedPip: True
     ```
 
-#Advanced settings
+#Advanced configuration
 
-There are a couple of options that can be handy for you.
+There are a couple of configurations that can be handy for you.
 
 ##severless.yml
 
@@ -139,17 +140,16 @@ custom:
     # The default filename is 'wrap.py', but you can change it to avoid name clashes.
     wrapName: wrapFoo
 
-    # pip install packages to ${libSubDir} under the each functions' directory
+    # pip install packages to ${libSubDir} along with ${wrapNam}.py
     # The default dir is 'lib'.
     # libSubDir: lib
-
 
     # Cleanup ${libSubDir} and ${wrapName}.py created by the plugin.
     # The default is True.
     # cleanup: True
 
-    # Mapping to the real handler of every function in the format:
-    # ${wrapName}:${functionName}: ${real_handler}
+    # Mapping to the real handler of every function. In the format:
+    # ${wrapName}:function_name: real_handler
     # If there's no mapping for a function, then that function will not be touced by this plugin.
     wrapFoo:helloFunc: hello/handler.hello
     wrapFoo:worldFunnc: world/handler.world
@@ -163,18 +163,19 @@ custom:
 
 ##Command line options
 
-`sls deploy` is also extended with a few more options:
+You can also overwrite some configurations through extra options when `sls deploy`.
 
 * `--pi-cleanup`/`--pi-no-cleanup` overwrite `cleanup` in serverless.yml.
 
 * `--pi-dockerizedPip`/`--pi-no-dockerizedPip` overwrite `dockerizedPip` in serverless.yml.
 
-* If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin:
+* **Use with care**: If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin:
 
     ```
-> sls deploy --pi-no-cleanup  # wrap.py and lib/* are not deleted
+> sls deploy --pi-no-cleanup  # wrap.py and lib/* will not be cleaned.
 > # ...
-> # do some work. requirements.txt is not changed anyhow.
+> # Do some work. requirements.txt should not be changed anyhow.
+> # Disable the plugin for this time. sls should then go directly to pack what's not cleaned last time.
 > sls deploy --pi-disable
     ```
 
