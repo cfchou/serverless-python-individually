@@ -165,11 +165,11 @@ You can also overwrite some configurations through extra options when `sls deplo
 * Handy but **USE WITH CARE**: If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin temporarily:
 
     ```
-> sls deploy --pi-no-cleanup  
+$> sls deploy --pi-no-cleanup  
 ... wrap.py and lib/* will not be cleaned.
 Do some work. requirements.txt should not be changed anyhow.
 Disable the plugin for this time. sls should then directly pack what's not cleaned last time.
-> sls deploy --pi-disable
+$> sls deploy --pi-disable
     ```
 
 #Demo
