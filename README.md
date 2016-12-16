@@ -13,12 +13,10 @@
 
 
 #What's it?
-
 It's a simple plugin for serverless **1.3** that makes it easier to package multiple lambda functions written in python.
 
 
 #Why do I need it?
-
 Say you have multiple lambda functions and each of them has fairly different package requirements. It's not economical to pack all dependencies in one big fat zip. Instead, you can create **requirements.txt** for every function:
 
 ```
@@ -38,7 +36,6 @@ Moreover, if you are on a Mac, thanks to [@docker-lambda](https://github.com/lam
 
 
 #How?
-
 Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed. Otherwise,
 
 `pip install virtualenv`
@@ -59,7 +56,7 @@ functions:
 
 The plugin works by replacing the **real handlers**(e.g. `hello/handler.hello`) with a wrapper generated on the fly(e.g. `hello/wrap.handler`). The real handlers are instead set in **custom.pyIndividually** section.
 
-So the minimum modification would be:
+So a simple configuration would be:
 
 ```
 package:
@@ -80,8 +77,8 @@ functions:
         - world/**
 custom:
   pyIndividually:
-    wrap:helloFunc: hello/handler.hello
-    wrap:worldFunnc: world/handler.world
+    wrap:helloFunc: hello/handler.hello     # mapping to the real handler
+    wrap:worldFunnc: world/handler.world    # mapping to the real handler
 
 plugins:
   - serverless-python-individually
@@ -123,15 +120,12 @@ If you are on a Mac, there're platform-dependent dependencies like *subprocess32
     ```
 
 #Advanced configuration
-
 There are a couple of configurations that can be handy for you.
 
-##severless.yml
-
+###severless.yml
 * **wrap.py** and **lib/** are created during packaging in the same directory where the real handler is. If you are not happy about the naming, you can change `wrapName` and `libSubDir`. 
 
 * **wrap.py** and **lib/** by default will be deleted after packaging. They can be preserved by setting `cleanup` to False.
-
 
 ```
 custom:
@@ -161,8 +155,7 @@ custom:
 ```
 
 
-##Command line options
-
+###Command line options
 You can also overwrite some configurations through extra options when `sls deploy`.
 
 * `--pi-cleanup`/`--pi-no-cleanup` overwrite `cleanup` in serverless.yml.
@@ -179,14 +172,9 @@ You can also overwrite some configurations through extra options when `sls deplo
 > sls deploy --pi-disable
     ```
 
-
-
-
-
-
-
 #Demo
 A [demo](https://github.com/cfchou/serverless-python-individually-demo) is there for you to get started.
+
 
 #Credit
 This plugin is heavily influenced by [serverless-wsgi](https://github.com/logandk/serverless-wsgi) from [@logandk](https://github.com/logandk). In fact, the [requirement installer](https://github.com/cfchou/serverless-python-individually/blob/master/requirements.py) is directly borrowed from his repo. If your lambda is a wsgi app, then must check out his work.
