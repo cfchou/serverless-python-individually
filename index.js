@@ -165,7 +165,7 @@ class PythonIndividually {
 
     return this.wrap(wrapperDir, wrapperPy, this.libSubDir, target.realHandler).bind(this)
       .then(_.partial(this.fileAccessable, Path.join(wrapperDir, 'requirements.txt'))).bind(this)
-      .then(_.partial(this.hard_remove, [wrapperPy, packagePath])
+      .then(_.partial(this.hard_remove, [wrapperPy, packagePath]))
       .then(() => { return Fse.ensureDirAsync(packagePath); })
       .then(() => {
         return Fse.copyAsync(
