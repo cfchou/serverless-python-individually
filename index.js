@@ -76,7 +76,7 @@ class PythonIndividually {
       return origin;
     }
 
-    this.cleanup = updater('cleanup', this.options, pyIndividually, this.clean)
+    this.cleanup = updater('cleanup', this.options, pyIndividually, this.cleanup)
     this.log('cleanup: ' + this.cleanup);
     this.dockerizedPip = updater('dockerizedPip', this.options, pyIndividually,
       this.dockerizedPip)
@@ -172,7 +172,8 @@ class PythonIndividually {
           Path.join(__dirname, 'requirements.py'), requirementsPy);
       }).bind(this)
       .then(_.partial(this.install, wrapperDir, this.libSubDir))
-      .then(() => { return Fse.removeAsync(requirementsPy); }).bind(this)
+      //.then(() => { return Fse.removeAsync(requirementsPy); }).bind(this)
+      .then(_.partial(this.hard_remove, [requirementsPy])).bind(this)
       .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined));
   };
 
@@ -201,11 +202,11 @@ class PythonIndividually {
    */
   soft_remove(paths) {
     const that = this;
-    // unlike all/map, settle waits for everyone despite of rejections/exceptions.
-    return BbPromise.settle(_.map(paths, Fse.removeAsync))
+    return BbPromise.settle(_.map(paths, (p) => { return Fse.removeAsync(p); }))
       .then((results) => {
+        that.log('All clean up?');
         _.forEach(results, (r) => {
-          if (process.env.SLS_DEBUG) {
+          if (r.isRejected() && process.env.SLS_DEBUG) {
             that.log(r.reason());
           }
         });
@@ -214,7 +215,7 @@ class PythonIndividually {
   }
 
   hard_remove(paths) {
-    return BbPromise.all(_.map(paths, Fse.removeAsync));
+    return BbPromise.all(_.map(paths, (p) => { return Fse.removeAsync(p); }));
   }
 
   /**
@@ -321,8 +322,6 @@ def handler(event, context):
     const packagePath = Path.join(wrapperDir, this.libSubDir);
     const wrapperPath = Path.join(wrapperDir, wrapperPy);
     this.log('Deleting ' + wrapperPath + ', ' + packagePath);
-    //return BbPromise.settle([this.remove(wrapperPath),
-    //  this.remove(packagePath)])
     return this.soft_remove([wrapperPath, packagePath]);
   };
 
