@@ -84,7 +84,7 @@ plugins:
   - serverless-python-individually
 ```
 
-After **sls deploy**, you end up having many .zip in **.serverless/**. You can examine their content like:
+After **sls deploy**, you end up having many .zip in **.serverless/**. They are the actual artifacts that got uploaded to AWS Lambda by serverless. You can examine their content like:
 
 ```
 > tar tvzf .serverless/aws-python-dev-helloFunc.zip
@@ -123,7 +123,7 @@ If you are on a Mac, there're platform-dependent dependencies like *subprocess32
 There are a couple of configurations that can be handy for you.
 
 ###severless.yml
-* **wrap.py** and **lib/** are created during packaging in the same directory where the real handler is. If you are not happy about the naming, you can change `wrapName` and `libSubDir`. 
+* **wrap.py** and **lib/** are created during packaging in the same directory where the real handler is. If you are not happy about the naming, you can change `wrapName` and `libSubDir`.
 
 * **wrap.py** and **lib/** by default will be deleted after packaging. They can be preserved by setting `cleanup` to False.
 
@@ -162,14 +162,14 @@ You can also overwrite some configurations through extra options when `sls deplo
 
 * `--pi-dockerizedPip`/`--pi-no-dockerizedPip` overwrite `dockerizedPip` in serverless.yml.
 
-* Handy but **USE WITH CARE**: If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin temporarily with `--pi-disable`:
+* Handy but **USE WITH CAUTION**: If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin temporarily with `--pi-disable`:
 
     ```
-$> sls deploy --pi-no-cleanup  
+$> sls deploy --pi-no-cleanup
 ... wrap.py and lib/* will not be cleaned.
 Do some work. requirements.txt should not be changed anyhow.
 $> sls deploy --pi-disable
-The plugin is disabled for this time. sls should then directly pack wrap.py and lib/* left last time.
+The plugin is disabled for this time. sls should then directly package functions with wrap.py and lib/* left previously.
     ```
 
 #Demo
@@ -184,7 +184,7 @@ Also thanks to [@docker-lambda](https://github.com/lambci/docker-lambda) to prov
 
 #Note
 As of this writing, I just start using serverless **1.3**. This plugin may or may
-not work with other 1.x versions but I haven't tried. 
+not work with other 1.x versions but I haven't tried.
 
 
 
