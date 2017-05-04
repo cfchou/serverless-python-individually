@@ -70,7 +70,7 @@ class PythonIndividually {
         return true;
       } else if (cliOption[disable]) {
         return false;
-      } else if (yamlOption[key]) {
+      } else if (key in yamlOption) {
         return yamlOption[key];
       }
       return origin;
