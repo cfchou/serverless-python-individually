@@ -204,7 +204,6 @@ class PythonIndividually {
     const that = this;
     return BbPromise.settle(_.map(paths, (p) => { return Fse.removeAsync(p); }))
       .then((results) => {
-        that.log('All clean up?');
         _.forEach(results, (r) => {
           if (r.isRejected() && process.env.SLS_DEBUG) {
             that.log(r.reason());

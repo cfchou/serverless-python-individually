@@ -1,4 +1,4 @@
-#serverless-python-individually
+# serverless-python-individually
 
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
 
@@ -12,11 +12,11 @@
 - [Note](#note)
 
 
-#What's it?
+# What's it?
 It's a simple plugin for serverless **1.3** that makes it easier to package multiple lambda functions written in python.
 
 
-#Why do I need it?
+# Why do I need it?
 Say you have multiple lambda functions and each of them has fairly different package requirements. It's not economical to pack all dependencies in one big fat zip. Instead, you can create **requirements.txt** for every function:
 
 ```
@@ -35,7 +35,7 @@ That way, this plugin can help to pack lambda functions with their own dependenc
 Moreover, if you are on a Mac, thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), it can pull packages for Linux x86_64 too. More on that please read [How to install platform-dependent packages](#how-to-install-platform-dependent-packages).
 
 
-#How?
+# How?
 Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed. Otherwise,
 
 `pip install virtualenv`
@@ -44,7 +44,7 @@ Then,
 
 `npm install serverless-python-individually`
 
-Your **serverless.yml** may look something like:
+Your **serverless.yml** may look like:
 
 ```
 functions:
@@ -103,7 +103,7 @@ Notice that **wrap.py** and **lib/** are created for you. All dependencies shoul
 This plugin also works for **sls deploy function -f**.
 
 
-#How to install platform-dependent packages
+# How to install platform-dependent packages
 If you are on a Mac, there're platform-dependent dependencies like *subprocess32*, *bcrypt*, etc., cannot simply be pip installed. One way to get around is to launch a aws-lambda architecture identical EC2 or a VM to do the job. That's inconvenient to say the least. Thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), we can launch a container for the same purpose at our disposal. All you need to do is:
 
 - Make sure [docker](https://docs.docker.com/engine/installation/mac/) is installed and properly set up. I.e. when running `docker version` you should see information about client and server.
@@ -119,12 +119,11 @@ If you are on a Mac, there're platform-dependent dependencies like *subprocess32
             dockerizedPip: True
     ```
 
-#Advanced configuration
+# Advanced configuration
 There are a couple of configurations that can be handy for you.
 
 ###severless.yml
 * **wrap.py** and **lib/** are created during packaging in the same directory where the real handler is. If you are not happy about the naming, you can change `wrapName` and `libSubDir`.
-
 * **wrap.py** and **lib/** by default will be deleted after packaging. They can be preserved by setting `cleanup` to False.
 
 ```
@@ -155,34 +154,35 @@ custom:
 ```
 
 
-###Command line options
+### Command line options
 You can also overwrite some configurations through extra options when `sls deploy`.
 
 * `--pi-cleanup`/`--pi-no-cleanup` overwrite `cleanup` in serverless.yml.
 
 * `--pi-dockerizedPip`/`--pi-no-dockerizedPip` overwrite `dockerizedPip` in serverless.yml.
 
-* Handy but **USE WITH CAUTION**: If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin temporarily with `--pi-disable`:
+* `--pi-disable` skips this plugin.
 
-    ```
-$> sls deploy --pi-no-cleanup
-... wrap.py and lib/* will not be cleaned.
-Do some work. requirements.txt should not be changed anyhow.
+* Handy but **USE WITH CAUTION**: If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin temporarily with `--pi-disable`. sls would pack what's left over in the directory:
+
+```
+$> sls deploy --pi-no-cleanup  
+Now wrap.py and lib/* are not cleaned. You can do some work. Make sure requirements.txt not being changed anyhow.
 $> sls deploy --pi-disable
-The plugin is disabled for this time. sls should then directly package functions with wrap.py and lib/* left previously.
-    ```
+The plugin is disabled for this time. sls should then directly pack wrap.py and lib/* left last time.
+```
 
-#Demo
+# Demo
 A [demo](https://github.com/cfchou/serverless-python-individually-demo) is there for you to get started.
 
 
-#Credit
+# Credit
 This plugin is heavily influenced by [serverless-wsgi](https://github.com/logandk/serverless-wsgi) from [@logandk](https://github.com/logandk). In fact, the [requirement installer](https://github.com/cfchou/serverless-python-individually/blob/master/requirements.py) is directly borrowed from his repo. If your lambda is a wsgi app, then must check out his work.
 
 Also thanks to [@docker-lambda](https://github.com/lambci/docker-lambda) to provide aws lambda runtime equivalent docker image.
 
 
-#Note
+# Note
 As of this writing, I just start using serverless **1.3**. This plugin may or may
 not work with other 1.x versions but I haven't tried.
 
