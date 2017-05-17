@@ -17,7 +17,7 @@ It's a simple plugin for serverless **1.3** that makes it easier to package mult
 
 
 # Why do I need it?
-Say you have multiple lambda functions and each of them has fairly different package requirements. It's not economical to pack all dependencies in one big fat zip. Instead, you can create **requirements.txt** for every function:
+Say you have multiple lambda functions and each of them has fairly different package requirements. It's not economical to pack all dependencies in one big fat zip. Instead, this plugin can help to pack lambda functions with their own dependencies if you create **requirements.txt** for every function:
 
 ```
 project
@@ -44,7 +44,7 @@ Then,
 
 `npm install serverless-python-individually`
 
-Your **serverless.yml** may look like:
+Your original **serverless.yml** may look like:
 
 ```
 functions:
@@ -56,7 +56,7 @@ functions:
 
 The plugin works by replacing the **real handlers**(e.g. `hello/handler.hello`) with a wrapper generated on the fly(e.g. `hello/wrap.handler`). The real handlers are instead set in **custom.pyIndividually** section.
 
-So a simple configuration would be:
+A modification to **serverless.yml** is needed:
 
 ```
 package:
