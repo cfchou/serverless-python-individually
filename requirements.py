@@ -53,7 +53,7 @@ if os.path.exists(TMP_DIR):
 original = sys.argv
 sys.argv = ['', VENV_DIR]
 try:
-    sys_stdout.write(b'creating virtualenv {}\n'.format(VENV_DIR))
+    sys_stdout.write('creating virtualenv {}\n'.format(VENV_DIR).encode())
     virtualenv.main()
 finally:
     sys.argv = original
@@ -87,7 +87,7 @@ if not os.path.isdir(deps_dir):
 blacklist = ['pip', 'pip-*', 'wheel', 'wheel-*', 'setuptools', 'setuptools-*',
              'easy_install.*']
 
-sys_stdout.write(b'copy dependencies to temporary {}\n'.format(TMP_DIR))
+sys_stdout.write('copy dependencies to temporary {}\n'.format(TMP_DIR).encode())
 shutil.copytree(deps_dir, TMP_DIR, symlinks=False,
                 ignore=shutil.ignore_patterns(*blacklist))
 for f in os.listdir(TMP_DIR):
@@ -97,9 +97,9 @@ for f in os.listdir(TMP_DIR):
     elif os.path.exists(target):
         os.remove(target)
     shutil.move(os.path.join(TMP_DIR, f), TARGET_DIR)
-    sys_stdout.write(b'{} created\n'.format(target))
+    sys_stdout.write('{} created\n'.format(target).encode())
 
-sys_stdout.write(b'removing virtualenv {}\n'.format(VENV_DIR))
+sys_stdout.write('removing virtualenv {}\n'.format(VENV_DIR).encode())
 shutil.rmtree(VENV_DIR)
-sys_stdout.write(b'removing temporary {}\n'.format(TMP_DIR))
+sys_stdout.write('removing temporary {}\n'.format(TMP_DIR).encode())
 shutil.rmtree(TMP_DIR)
