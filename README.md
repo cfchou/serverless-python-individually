@@ -122,7 +122,7 @@ If you are on a Mac, there're platform-dependent dependencies like *subprocess32
 # Advanced configuration
 There are a couple of configurations that can be handy for you.
 
-###severless.yml
+### severless.yml
 * **wrap.py** and **lib/** are created during packaging in the same directory where the real handler is. If you are not happy about the naming, you can change `wrapName` and `libSubDir`.
 * **wrap.py** and **lib/** by default will be deleted after packaging. They can be preserved by setting `cleanup` to False.
 
@@ -166,7 +166,7 @@ You can also overwrite some configurations through extra options when `sls deplo
 * Handy but **USE WITH CAUTION**: If `--pi-no-cleanup` was specified previously and you don't want to pull dependencies again, then you can disable this plugin temporarily with `--pi-disable`. sls would pack what's left over in the directory:
 
 ```
-$> sls deploy --pi-no-cleanup  
+$> sls deploy --pi-no-cleanup
 Now wrap.py and lib/* are not cleaned. You can do some work. Make sure requirements.txt not being changed anyhow.
 $> sls deploy --pi-disable
 The plugin is disabled for this time. sls should then directly pack wrap.py and lib/* left last time.
