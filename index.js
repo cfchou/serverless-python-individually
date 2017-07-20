@@ -229,8 +229,9 @@ class PythonIndividually {
     // realHandler: hello/hello.handler
     // handler: hello.handler
     // identifiers: ['hello', 'handler']
-    const handler = realHandler.substring(realHandler.lastIndexOf(Path.sep) + 1);
-    const identifiers = handler.split('.');
+    const path = Path.parse(realHandler);
+    const file = path.name;
+    const handler = path.ext.split('.').pop();
     const content = `
 # vim:fileencoding=utf-8
 # ${filename}
@@ -241,7 +242,7 @@ import sys
 root = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path[0:0] = [root, os.path.join(root, \"${libDir}\")]
 
-from ${identifiers[0]} import ${identifiers[1]} as real_handler
+from ${file} import ${handler} as real_handler
 
 def handler(event, context):
   return real_handler(event, context)
