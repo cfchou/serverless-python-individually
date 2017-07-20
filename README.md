@@ -3,6 +3,7 @@
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
 
 - [What's it?](#whats-it)
+- [What's new?](#whats-new)
 - [Why do I need it?](#why-do-i-need-it)
 - [How?](#how)
 - [How to install platform-dependent packages?](#how-to-install-platform-dependent-packages)
@@ -13,8 +14,11 @@
 
 
 # What's it?
-It's a simple plugin for serverless **1.3** that makes it easier to package multiple lambda functions written in python.
+It's a simple plugin for serverless **1.3+** that makes it easier to package multiple lambda functions written in python.
 
+# What's new?
+- Since **0.1.5** lambda functions placed under subdirectories are supported.
+- Since **0.1.4** python3.6  is supported.
 
 # Why do I need it?
 Say you have multiple lambda functions and each of them has fairly different package requirements. It's not economical to pack all dependencies in one big fat zip. Instead, this plugin can help to pack lambda functions with their own dependencies if you create **requirements.txt** for every function:
@@ -33,7 +37,6 @@ project
 That way, this plugin can help to pack lambda functions with their own dependencies.
 
 Moreover, if you are on a Mac, thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), it can pull packages for Linux x86_64 too. More on that please read [How to install platform-dependent packages](#how-to-install-platform-dependent-packages).
-
 
 # How?
 Be sure that [virtualenv](https://pypi.python.org/pypi/virtualenv/) is installed. Otherwise,
@@ -107,7 +110,8 @@ This plugin also works for **sls deploy function -f**.
 If you are on a Mac, there're platform-dependent dependencies like *subprocess32*, *bcrypt*, etc., cannot simply be pip installed. One way to get around is to launch a aws-lambda architecture identical EC2 or a VM to do the job. That's inconvenient to say the least. Thanks to [@docker-lambda](https://github.com/lambci/docker-lambda), we can launch a container for the same purpose at our disposal. All you need to do is:
 
 - Make sure [docker](https://docs.docker.com/engine/installation/mac/) is installed and properly set up. I.e. when running `docker version` you should see information about client and server.
-- `docker pull lambci/lambda:build-python2.7` to pull the image in advance.
+- For python2.7, `docker pull lambci/lambda:build-python2.7` to pull the image in advance.
+- For python3.6, `docker pull lambci/lambda:build-python3.6` to pull the image in advance.
 - Turn on **dockerizedPip** in **serverless.yml**:
     ```
     custom:
@@ -183,7 +187,7 @@ Also thanks to [@docker-lambda](https://github.com/lambci/docker-lambda) to prov
 
 
 # Note
-As of this writing, I just start using serverless **1.3**. This plugin may or may
+As of this writing, I just start using serverless **1.3+**. This plugin may or may
 not work with other 1.x versions but I haven't tried.
 
 

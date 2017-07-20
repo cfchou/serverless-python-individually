@@ -226,9 +226,9 @@ class PythonIndividually {
    * @returns {Promise.<undefined>|*}
    */
   wrap(dir, filename, libDir, realHandler) {
-    // realHandler: hello/hello.handler
-    // handler: hello.handler
-    // identifiers: ['hello', 'handler']
+    // realHandler: path_to/hello.handler_name
+    // file: hello
+    // handler: handler_name
     const path = Path.parse(realHandler);
     const file = path.name;
     const handler = path.ext.split('.').pop();
