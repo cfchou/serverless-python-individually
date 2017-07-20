@@ -264,14 +264,14 @@ def handler(event, context):
       if (dockerized) {
         return ['docker', 'run', '-v', process.cwd() + ':/var/task',
           'lambci/lambda:build-python2.7', 'python',
-          Path.join(dir, libDir, '_requirements.py'),
-          Path.join(dir, 'requirements.txt'),
-          Path.join(dir, libDir)];
+          Path.posix.join(dir, libDir, '_requirements.py'),
+          Path.posix.join(dir, 'requirements.txt'),
+          Path.posix.join(dir, libDir)];
       } else {
         return ['python',
-          Path.join(dir, libDir, '_requirements.py'),
-          Path.join(dir, 'requirements.txt'),
-          Path.join(dir, libDir)];
+          Path.posix.join(dir, libDir, '_requirements.py'),
+          Path.posix.join(dir, 'requirements.txt'),
+          Path.posix.join(dir, libDir)];
       }
     })(this.dockerizedPip);
 
