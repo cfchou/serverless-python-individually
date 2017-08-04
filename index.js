@@ -262,8 +262,9 @@ def handler(event, context):
   install(dir, libDir) {
     const cmd = ((dockerized) => {
       if (dockerized) {
+        const runtime = this.serverless.service.provider.runtime;
         return ['docker', 'run', '-v', process.cwd() + ':/var/task',
-          'lambci/lambda:build-python2.7', 'python',
+          'lambci/lambda:build-' + runtime, 'python',
           Path.posix.join(dir, libDir, '_requirements.py'),
           Path.posix.join(dir, 'requirements.txt'),
           Path.posix.join(dir, libDir)];
