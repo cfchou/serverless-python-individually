@@ -17,8 +17,8 @@
 It's a simple plugin for serverless **1.3+** that makes it easier to package multiple lambda functions written in python.
 
 # What's new?
+- Since **0.1.6** python3.6  is supported.
 - Since **0.1.5** lambda functions placed under subdirectories are supported.
-- Since **0.1.4** python3.6  is supported.
 
 # Why do I need it?
 Say you have multiple lambda functions and each of them has fairly different package requirements. It's not economical to pack all dependencies in one big fat zip. Instead, this plugin can help to pack lambda functions with their own dependencies if you create **requirements.txt** for every function:
