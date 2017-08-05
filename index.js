@@ -33,7 +33,7 @@ class PythonIndividually {
 
   isEnabled() {
     if (this.options['pi-disable']) {
-      throw new IgnorableError('disabled due to --pi-disable')
+      throw new IgnorableError('disabled due to --pi-disable');
     }
   }
 
@@ -74,12 +74,12 @@ class PythonIndividually {
         return yamlOption[key];
       }
       return origin;
-    }
+    };
 
-    this.cleanup = updater('cleanup', this.options, pyIndividually, this.cleanup)
+    this.cleanup = updater('cleanup', this.options, pyIndividually, this.cleanup);
     this.log('cleanup: ' + this.cleanup);
     this.dockerizedPip = updater('dockerizedPip', this.options, pyIndividually,
-      this.dockerizedPip)
+      this.dockerizedPip);
     this.log('dockerizedPip: ' + this.dockerizedPip);
   };
 
@@ -171,9 +171,10 @@ class PythonIndividually {
         return Fse.copyAsync(
           Path.join(__dirname, 'requirements.py'), requirementsPy);
       }).bind(this)
-      .then(_.partial(this.install, wrapperDir, this.libSubDir))
+      .then(_.partial(this.preinstall, wrapperDir, this.libSubDir)).bind(this)
+      .then(_.partial(this.install, wrapperDir, this.libSubDir)).bind(this)
       //.then(() => { return Fse.removeAsync(requirementsPy); }).bind(this)
-      .then(_.partial(this.hard_remove, [requirementsPy])).bind(this)
+      //.then(_.partial(this.hard_remove, [requirementsPy])).bind(this)
       .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined));
   };
 
@@ -246,11 +247,38 @@ from ${file} import ${handler} as real_handler
 
 def handler(event, context):
   return real_handler(event, context)
- 
+
 `;
     const wrapperPath = Path.join(dir, filename);
     this.log('Creating ' + wrapperPath);
     return Fse.outputFileAsync(wrapperPath, content);
+  };
+
+  /**
+   * A workaround of https://github.com/lambci/docker-lambda/pull/46
+   * It creates an dir/libDir/_install.sh for installing virtualenv
+   * and requirements.
+   * @param dir
+   * @param libDir
+   * @returns {Promise.<undefined>|*}
+   */
+  preinstall(dir, libDir) {
+    const runtime = this.serverless.service.provider.runtime;
+    if (!this.dockerizedPip || runtime !== "python3.6") {
+      return BbPromise.resolve()
+    }
+    const scriptPath = Path.join(dir, libDir, "_install.sh");
+    const runPy = ['python',
+      Path.posix.join(dir, libDir, '_requirements.py'),
+      Path.posix.join(dir, 'requirements.txt'),
+      Path.posix.join(dir, libDir)].join(' ');
+    const content = `
+# /bin/bash 
+pip3 install -U virtualenv && ${runPy}
+
+`;
+    this.log('Creating ' + scriptPath);
+    return Fse.outputFileAsync(scriptPath, content);
   };
 
   /**
@@ -263,11 +291,17 @@ def handler(event, context):
     const cmd = ((dockerized) => {
       if (dockerized) {
         const runtime = this.serverless.service.provider.runtime;
-        return ['docker', 'run', '-v', process.cwd() + ':/var/task',
-          'lambci/lambda:build-' + runtime, 'python',
-          Path.posix.join(dir, libDir, '_requirements.py'),
-          Path.posix.join(dir, 'requirements.txt'),
-          Path.posix.join(dir, libDir)];
+        if (runtime === "python3.6") {
+          return ['docker', 'run', '-v', process.cwd() + ':/var/task',
+            'lambci/lambda:build-' + runtime, 'bash',
+            Path.posix.join(dir, libDir, '_install.sh')];
+        } else {
+          return ['docker', 'run', '-v', process.cwd() + ':/var/task',
+            'lambci/lambda:build-' + runtime, 'python',
+            Path.posix.join(dir, libDir, '_requirements.py'),
+            Path.posix.join(dir, 'requirements.txt'),
+            Path.posix.join(dir, libDir)];
+        }
       } else {
         return ['python',
           Path.posix.join(dir, libDir, '_requirements.py'),
