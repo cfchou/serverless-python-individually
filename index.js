@@ -9,6 +9,7 @@ const Path = require('path');
 const Fse = require('fs-extra');
 const ChildProcess = require('child_process');
 const process = require('process');
+const os = require('os');
 
 BbPromise.promisifyAll(Fse);
 BbPromise.promisifyAll(ChildProcess);
@@ -173,6 +174,7 @@ class PythonIndividually {
       }).bind(this)
       .then(_.partial(this.preinstall, wrapperDir, this.libSubDir)).bind(this)
       .then(_.partial(this.install, wrapperDir, this.libSubDir)).bind(this)
+      .then(_.partial(this.postinstall, wrapperDir, this.libSubDir)).bind(this)
       //.then(() => { return Fse.removeAsync(requirementsPy); }).bind(this)
       //.then(_.partial(this.hard_remove, [requirementsPy])).bind(this)
       .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined));
@@ -311,6 +313,34 @@ pip3 install -U virtualenv && ${runPy}
     })(this.dockerizedPip);
 
     this.log('Installing packagings: ' + cmd.join(' '));
+    const ret = ChildProcess.spawnSync(cmd[0], cmd.slice(1));
+    this.log(ret.stderr.toString());
+    this.log(ret.stdout.toString());
+    if (ret.error || ret.stderr.length != 0) {
+      return BbPromise.reject(ret.error)
+    }
+    return BbPromise.resolve()
+  }
+
+  /**
+   *
+   * @param dir
+   * @param libDir
+   * @returns {Promise.<undefined>|*}
+   */
+  postinstall(dir, libDir) {
+    if (!this.dockerizedPip) {
+      return BbPromise.resolve()
+    }
+    const cmd = (() => {
+      const userInfo = os.userInfo();
+      const runtime = this.serverless.service.provider.runtime;
+      return ['docker', 'run', '-v', process.cwd() + ':/var/task',
+        'lambci/lambda:build-' + runtime, 'bash', '-c',
+        'chown -R ' + userInfo.uid + ':' + userInfo.gid + ' ' + dir];
+    })();
+
+    this.log('Changing the owner of the installed packagings: ' + cmd.join(' '));
     const ret = ChildProcess.spawnSync(cmd[0], cmd.slice(1));
     this.log(ret.stderr.toString());
     this.log(ret.stdout.toString());
