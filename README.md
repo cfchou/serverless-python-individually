@@ -54,7 +54,7 @@ functions:
   helloFunc:
     handler: hello/handler.hello
   worldFunc:
-    handler: world/handler
+    handler: world/handler.world
 ```
 
 The plugin works by replacing the **real handlers**(e.g. `hello/handler.hello`) with a wrapper generated on the fly(e.g. `hello/wrap.handler`). The real handlers are instead set in **custom.pyIndividually** section.
