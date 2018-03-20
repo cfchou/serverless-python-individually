@@ -316,7 +316,9 @@ pip3 install -U virtualenv && ${runPy}
     const ret = ChildProcess.spawnSync(cmd[0], cmd.slice(1));
     this.log(ret.stderr.toString());
     this.log(ret.stdout.toString());
-    if (ret.error || ret.stderr.length != 0) {
+
+    var isNotPipWarning = ret.stderr.indexOf('You are using pip version') < 0;
+    if (ret.error || (ret.stderr.length != 0 && isNotPipWarning)) {
       return BbPromise.reject(ret.error)
     }
     return BbPromise.resolve()
