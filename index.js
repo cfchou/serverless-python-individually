@@ -319,7 +319,7 @@ pip3 install -U virtualenv && ${runPy}
 
     var isNotPipWarning = ret.stderr.indexOf('You are using pip version') < 0;
     if (ret.error || (ret.stderr.length != 0 && isNotPipWarning)) {
-      this.log('Unhandled error in pip, not deploying to AWS. Error: ');
+      this.log('Unhandled error in pip, not deploying to AWS.');
       return BbPromise.reject(ret.error)
     }
     return BbPromise.resolve()
