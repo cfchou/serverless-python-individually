@@ -319,6 +319,7 @@ pip3 install -U virtualenv && ${runPy}
 
     var isNotPipWarning = ret.stderr.indexOf('You are using pip version') < 0;
     if (ret.error || (ret.stderr.length != 0 && isNotPipWarning)) {
+      this.log('Unhandled error in pip, not deploying to AWS. Error: ');
       return BbPromise.reject(ret.error)
     }
     return BbPromise.resolve()
@@ -403,14 +404,14 @@ pip3 install -U virtualenv && ${runPy}
     this.cleanup = true;
     this.dockerizedPip = false;
     this.hooks = {
-      'before:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
+      'before:package:createDeploymentArtifacts': () => BbPromise.bind(this)
         .then(this.isEnabled)
         .then(this.overwriteDefault)
         .then(this.selectAll)
         .map(this.work).bind(this)
         .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined)),
 
-      'after:deploy:createDeploymentArtifacts': () => BbPromise.bind(this)
+      'after:package:createDeploymentArtifacts': () => BbPromise.bind(this)
         .then(this.isEnabled)
         .then(this.needCleanup)
         .then(this.selectAll)
