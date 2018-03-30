@@ -163,6 +163,7 @@ class PythonIndividually {
       target.function.handler.length - wrapper.length);
     const packagePath = Path.join(wrapperDir, this.libSubDir);
     const requirementsPy = Path.join(packagePath, '_requirements.py');
+    const runtime = target.function.runtime
 
     return this.wrap(wrapperDir, wrapperPy, this.libSubDir, target.realHandler).bind(this)
       .then(_.partial(this.fileAccessable, Path.join(wrapperDir, 'requirements.txt'))).bind(this)
@@ -172,9 +173,9 @@ class PythonIndividually {
         return Fse.copyAsync(
           Path.join(__dirname, 'requirements.py'), requirementsPy);
       }).bind(this)
-      .then(_.partial(this.preinstall, wrapperDir, this.libSubDir)).bind(this)
-      .then(_.partial(this.install, wrapperDir, this.libSubDir)).bind(this)
-      .then(_.partial(this.postinstall, wrapperDir, this.libSubDir)).bind(this)
+      .then(_.partial(this.preinstall, wrapperDir, this.libSubDir, runtime)).bind(this)
+      .then(_.partial(this.install, wrapperDir, this.libSubDir, runtime)).bind(this)
+      .then(_.partial(this.postinstall, wrapperDir, this.libSubDir, runtime)).bind(this)
       //.then(() => { return Fse.removeAsync(requirementsPy); }).bind(this)
       //.then(_.partial(this.hard_remove, [requirementsPy])).bind(this)
       .then(BbPromise.resolve, _.partial(this.catchIgnorableError, undefined));
@@ -264,8 +265,8 @@ def handler(event, context):
    * @param libDir
    * @returns {Promise.<undefined>|*}
    */
-  preinstall(dir, libDir) {
-    const runtime = this.serverless.service.provider.runtime;
+  preinstall(dir, libDir, funcRuntime) {
+    const runtime = funcRuntime || this.serverless.service.provider.runtime;
     if (!this.dockerizedPip || runtime !== "python3.6") {
       return BbPromise.resolve()
     }
@@ -275,7 +276,7 @@ def handler(event, context):
       Path.posix.join(dir, 'requirements.txt'),
       Path.posix.join(dir, libDir)].join(' ');
     const content = `
-# /bin/bash 
+# /bin/bash
 pip3 install -U virtualenv && ${runPy}
 
 `;
@@ -289,10 +290,10 @@ pip3 install -U virtualenv && ${runPy}
    * @param libDir
    * @returns {Promise.<undefined>|*}
    */
-  install(dir, libDir) {
+  install(dir, libDir, funcRuntime) {
     const cmd = ((dockerized) => {
       if (dockerized) {
-        const runtime = this.serverless.service.provider.runtime;
+        const runtime = funcRuntime || this.serverless.service.provider.runtime;
         if (runtime === "python3.6") {
           return ['docker', 'run', '-v', process.cwd() + ':/var/task',
             'lambci/lambda:build-' + runtime, 'bash',
@@ -328,13 +329,13 @@ pip3 install -U virtualenv && ${runPy}
    * @param libDir
    * @returns {Promise.<undefined>|*}
    */
-  postinstall(dir, libDir) {
+  postinstall(dir, libDir, funcRuntime) {
     if (!this.dockerizedPip) {
       return BbPromise.resolve()
     }
     const cmd = (() => {
       const userInfo = os.userInfo();
-      const runtime = this.serverless.service.provider.runtime;
+      const runtime = funcRuntime || this.serverless.service.provider.runtime;
       return ['docker', 'run', '-v', process.cwd() + ':/var/task',
         'lambci/lambda:build-' + runtime, 'bash', '-c',
         'chown -R ' + userInfo.uid + ':' + userInfo.gid + ' ' + dir];
