@@ -335,6 +335,8 @@ pip3 install -U virtualenv && ${runPy}
   postinstall(dir, libDir, funcRuntime) {
     if (!this.dockerizedPip) {
       return BbPromise.resolve()
+    } else if (os.platform() === 'win32') {
+        return BbPromise.resolve()
     }
     const cmd = (() => {
       const userInfo = os.userInfo();
