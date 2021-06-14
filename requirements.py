@@ -54,7 +54,7 @@ original = sys.argv
 sys.argv = ['', VENV_DIR]
 try:
     sys_stdout.write('creating virtualenv {}\n'.format(VENV_DIR).encode())
-    virtualenv.main()
+    virtualenv.cli_run([VENV_DIR])
 finally:
     sys.argv = original
 
