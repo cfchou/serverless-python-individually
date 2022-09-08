@@ -315,6 +315,8 @@ pip3 install -U virtualenv && ${runPy}
 
     this.log('Installing packagings: ' + cmd.join(' '));
     const ret = ChildProcess.spawnSync(cmd[0], cmd.slice(1));
+    ret.stderr = ret.stderr || ''
+    ret.stdout = ret.stdout || ''
     this.log(ret.stderr.toString());
     this.log(ret.stdout.toString());
 
