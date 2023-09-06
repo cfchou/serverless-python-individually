@@ -315,10 +315,12 @@ pip3 install -U virtualenv && ${runPy}
 
     this.log('Installing packagings: ' + cmd.join(' '));
     const ret = ChildProcess.spawnSync(cmd[0], cmd.slice(1));
+    ret.stderr = ret.stderr || ''
+    ret.stdout = ret.stdout || ''
     this.log(ret.stderr.toString());
     this.log(ret.stdout.toString());
 
-    var isNotPipWarning = ret.stderr.indexOf('You are using pip version') < 0;
+    var isNotPipWarning = ret.stderr.indexOf('You are using pip version') < 0 && ret.stderr.indexOf('A new release of pip') < 0;
     if (ret.error || (ret.stderr.length != 0 && isNotPipWarning)) {
       this.log('Unhandled error in pip, not deploying to AWS.');
       return BbPromise.reject(ret.error)
